@@ -2,7 +2,7 @@ import numpy as np
 import math
 
 # design variables 
-P_des = 85 # bar
+P_des = 75 # bar
 T_des = 270 # °C
 D_bar = 2.5 # m
 D_ves = 3.0 # m
@@ -13,9 +13,9 @@ S_m = 124e6 # Pa
 R_bar = D_bar / 2
 R_ves = D_ves / 2
 
-P_des = P_des * 1e5
+P_des = P_des * 1e5 # Pa
 
-thickness = (P_des * R_ves) / (S_m-0.5*P_des)
+thickness = (P_des * R_ves) / (S_m - 0.5 * P_des)
 
 print(f'minimum thickness: {thickness}')
 print(f'{P_des}')
