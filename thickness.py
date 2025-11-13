@@ -18,4 +18,4 @@ P_des = P_des * 1e5 # Pa
 thickness = (P_des * R_ves) / (S_m - 0.5 * P_des)
 
 print(f'minimum thickness: {thickness}')
-print(f'{P_des}')
+print(f'design pressure: {P_des}')
