@@ -56,10 +56,13 @@ Nu_II = 0.13 * (Gr * Pr_II)**(1 / 3)
 
 h2 = (Nu_II * thermal_conductivity_II) / D_ext
 
+R1 = R_ves + thickness
+R2 = R1 + thick_insulation
+
 # global heat transfer coefficient vessel-thermal insulation
-U1 = 1 / (R_ves / thermal_conductivity_I * math.log(R_ves / R_bar) + R_ves / (R_bar * h1))
+U1 = 1 / (R1 / thermal_conductivity_I * math.log(R2 / R2) + R1 / (R2 * h1))
 
 # global heat transfer coefficient insulator-cpp
-U2 = 1 / (R_bar / thermal_conductivity_I * math.log(R_ves / R_bar) + 1 /  h1)
+U2 = 1 / (R2 / thermal_conductivity_I * math.log(R2 / R1) + 1 /  h1)
 
 print(f'{U1}; {U2}')
