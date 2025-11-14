@@ -45,7 +45,7 @@ P_des = P_des * 1e5  # Pa
 # calculate thickness
 thickness = (P_des * R_ves) / (S_m - 0.5 * P_des)
 
-print(f"Minimum thickness= {thickness:.5}")
+print(f"Minimum thickness= {thickness * 100:.5} cm")
 
 # convective heat transfer coefficient for primary fluid
 area = math.pi * (D_ves**2 - D_bar**2) / 4
@@ -57,7 +57,7 @@ Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
 
 h1 = (Nu_I * thermal_conductivity_I) / D_e
 
-print(f"Convective heat transfer coefficient 1= {h1:.5}")
+print(f"Convective heat transfer coefficient 1= {h1:.5} W / m^2 K")
 
 # convective heat transfer coefficient for secondary fluid
 # external diameter
@@ -69,7 +69,7 @@ Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 
 h2 = (Nu_II * thermal_conductivity_II) / D_ext
 
-print(f"Convective heat transfer coefficient 2= {h2:.5}")
+print(f"Convective heat transfer coefficient 2= {h2:.5} W / m^2 K")
 
 
 R1 = R_ves + thickness
@@ -81,8 +81,8 @@ U1 = 1 / (R1 / thermal_conductivity_ins * math.log(R2 / R1) + R1 / (R2 * h1))
 # global heat transfer coefficient insulator-cpp
 U2 = 1 / (R2 / thermal_conductivity_ins * math.log(R2 / R1) + 1 / h2)
 
-print(f"U1 vessel-thermal insulation= {U1:.5}")
-print(f"U2 insulator-cpp= {U2:.5}")
+print(f"U1 vessel-thermal insulation= {U1:.5} W / K")
+print(f"U2 insulator-cpp= {U2:.5} W / K")
 
 # Point 6
 T1 = T1 + TK
@@ -125,6 +125,61 @@ plt.figure(figsize=(6, 5))
 plt.plot(x, T, label="Temperature profile")
 plt.xlabel("x (m)")
 plt.ylabel("Temperature (K)")
-plt.title("Temperature distribution across pressure vessel")
+plt.title("Temperature profile inside RPV wall")
+plt.minorticks_on()
 plt.grid(True)
 plt.show()
+
+q_second = (T1 - T2) / (
+    1 / h1
+    + thickness / (thermal_conductivity_steel * area)
+    + thick_insulation / thermal_conductivity_ins
+    + 1 / h2
+)
+
+# Cylinder
+U1_c = 1 / (
+    1 / h1
+    + R_ves / thermal_conductivity_steel * np.log((R_ves + thickness) / R_ves)
+    + R_ves
+    / thermal_conductivity_ins
+    * np.log((R_ves + thickness + thick_insulation) / (R_ves + thick_insulation))
+    + R_ves / (R_ves + thickness + thick_insulation) * 1 / h2
+)
+
+# global heat transfer coefficient insulator-cpp
+U2_c = 1 / (
+    (R_ves + thickness) / R_ves * 1 / h1
+    + (R_ves + thickness)
+    / thermal_conductivity_steel
+    * np.log((R_ves + thickness) / R_ves)
+    + (R_ves + thickness)
+    / thermal_conductivity_ins
+    * np.log((R_ves + thickness + thick_insulation) / (R_ves + thick_insulation))
+    + (R_ves + thickness) / (R_ves + thickness + thick_insulation) * 1 / h2
+)
+
+print(f"U1 vessel-thermal insulation= {U1_c:.5} W / K")
+print(f"U2 insulator-cpp= {U2_c:.5} W / K")
+
+A_c = -R_ves / thermal_conductivity_steel * U1_c * (T1 - T2)
+B_c = -(R_ves + thickness) / thermal_conductivity_steel * U2 * (T1 - T2)
+r = np.linspace(1e-5, thickness, 100)
+
+T_c = A_c * np.log(r) + B_c
+
+plt.figure(figsize=(6, 5))
+plt.plot(r, T_c, label="Temperature profile")
+plt.xlabel("x (m)")
+plt.ylabel("Temperature (K)")
+plt.title("Temperature profile inside RPV wall (cylinder)")
+plt.minorticks_on()
+plt.grid(True)
+plt.show()
+
+check = (U1_c * R_ves) / (U2_c * (R_ves + thickness))
+
+if round(check, 4) == 1:
+    print(f"ok, ratio is: {round(check, 4)}")
+else:
+    print(f"not ok, ratio is: {round(check, 4)}")
