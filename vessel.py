@@ -28,8 +28,12 @@ mu_steel = 24  # 1 / m
 thermal_conductivity_steel = 48.1  #  W / m K
 T1 = 214  # °C
 T2 = 70  # °C
-q0 = 1000
 TK = 273.25  # K
+S_y = 186e6  # Pa
+E = 177e9  # Pa
+nu = 0.3
+alpha_T = 1.7e-5  # 1 / K
+sigma_T = 0.56
 
 # contants
 g = 9.806  # m / s
@@ -85,22 +89,26 @@ print(f"U1 vessel-thermal insulation= {U1:.5} W / K")
 print(f"U2 insulator-cpp= {U2:.5} W / K")
 
 # Point 6
+phi_0 = phi_0 * 1e4
+energy_gamma = energy_gamma * eV
+q03 = phi_0 * energy_gamma * mu_steel
+
 T1 = T1 + TK
 T2 = T2 + TK
 term1 = (
-    -(q0 * thick_insulation)
+    -(q03 * thick_insulation)
     / (mu_steel * thermal_conductivity_ins)
     * np.exp(-mu_steel * thickness)
 )
 term2 = -(thick_insulation / (h2 * thermal_conductivity_ins)) * np.exp(
     -mu_steel * thickness
 )
-term3 = (q0 / (mu_steel**2 * thermal_conductivity_steel)) * np.exp(
+term3 = (q03 / (mu_steel**2 * thermal_conductivity_steel)) * np.exp(
     -mu_steel * thickness
 )
 term4 = -T1
-term5 = -q0 / (mu_steel**2 * thermal_conductivity_steel)
-term6 = -q0 / (mu_steel * h1)
+term5 = -q03 / (mu_steel**2 * thermal_conductivity_steel)
+term6 = -q03 / (mu_steel * h1)
 
 numerator = term1 + term2 + term3 + term4 + term5 + term6
 denominator = (
@@ -114,13 +122,17 @@ A = numerator / denominator
 
 B = (
     T1
-    + q0 / (mu_steel**2 * thermal_conductivity_steel)
+    + q03 / (mu_steel**2 * thermal_conductivity_steel)
     + (thermal_conductivity_steel * A) / h1
-    + q0 / (mu_steel * h1)
+    + q03 / (mu_steel * h1)
 )
 
 x = np.linspace(0, thickness, 100)
-T = -q0 / (mu_steel**2 * thermal_conductivity_steel) * np.exp(-mu_steel * x) + A * x + B
+T = (
+    -q03 / (mu_steel**2 * thermal_conductivity_steel) * np.exp(-mu_steel * x)
+    + A * x
+    + B
+)
 plt.figure(figsize=(6, 5))
 plt.plot(x, T, label="Temperature profile")
 plt.xlabel("x (m)")
@@ -183,3 +195,22 @@ if round(check, 4) == 1:
     print(f"ok, ratio is: {round(check, 4)}")
 else:
     print(f"not ok, ratio is: {round(check, 4)}")
+
+
+# Point 8
+P_m = P_des * R_ves / thickness + P_des / 2
+if P_m <= S_m:
+    print(f"Good, {P_m:.5} is less than {S_m:.5}")
+else:
+    print(f"Not good, {P_m:.5} is more than {S_m:.5}")
+
+Q = (sigma_T * alpha_T * E * q03) / (
+    thermal_conductivity_steel * (1 - nu) * mu_steel**2
+)
+
+test = Q + P_m
+test_y = 2 * S_y
+if test <= test_y:
+    print(f"Good, {test:.5} is less than {test_y:.5}")
+else:
+    print(f"Not good, {test:.5} is more than {test_y:.5}")
