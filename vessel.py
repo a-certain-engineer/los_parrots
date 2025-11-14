@@ -91,7 +91,7 @@ print(f"U2 insulator-cpp= {U2:.5} W / K")
 # Point 6
 phi_0 = phi_0 * 1e4
 energy_gamma = energy_gamma * eV
-q03 = phi_0 * energy_gamma * mu_steel
+q03 = phi_0 * energy_gamma * mu_steel * build_up
 
 T1 = T1 + TK
 T2 = T2 + TK
