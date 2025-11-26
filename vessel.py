@@ -175,7 +175,7 @@ print(f"U1 vessel-thermal insulation= {U_1c:.5} W / K")
 print(f"U2 insulator-cpp= {U_2c:.5} W / K")
 
 A_c = -R_ves / Thermal_conductivity_steel * U_1c * (T_1 - T_2)
-B_c = -(R_ves + Thickness) / Thermal_conductivity_steel * U_2 * (T_1 - T_2)
+B_c = -(R_ves + Thickness) / Thermal_conductivity_steel * U_2c * (T_1 - T_2)
 r = np.linspace(1e-5, Thickness, 100)
 
 T_c = A_c * np.log(r) + B_c
