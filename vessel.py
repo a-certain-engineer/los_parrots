@@ -187,7 +187,7 @@ plt.ylabel("Temperature (K)")
 plt.title("Temperature profile inside RPV wall (cylinder)")
 plt.minorticks_on()
 plt.grid(True)
-plt.show()
+# plt.show()
 
 check = (U_1c * R_ves) / (U_2c * (R_ves + Thickness))
 
