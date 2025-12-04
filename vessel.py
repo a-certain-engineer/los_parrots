@@ -1,6 +1,7 @@
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.integrate as integrate
 
 # variables
 P_des = 85  # bar
@@ -93,13 +94,12 @@ T_2 = T_2 + Kelvin
 
 
 # calculate integral
-def T_integral_norm(t, q03, Mu_steel, Thermal_conductivity_steel, A, B):
-    term_exp = (q03 / (Mu_steel**3 * Thermal_conductivity_steel)) * (
-        np.exp(-Mu_steel * t) - 1
+def T(x):
+    return (
+        -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
+        + A * x
+        + B
     )
-    term_A = 0.5 * A * t
-    term_B = B
-    return (term_exp + term_A * t + term_B * t) / t
 
 
 # Point 3
@@ -119,7 +119,7 @@ Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
 
 h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 
-print(f"Convective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
+# print(f"Convective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
 
 # convective heat transfer coefficient for secondary fluid
 # external diameter
@@ -131,7 +131,7 @@ Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 
 h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
 
-print(f"Convective heat transfer coefficient 2= {h_2:.5} W / m^2 K")
+# print(f"Convective heat transfer coefficient 2= {h_2:.5} W / m^2 K")
 
 
 R_1 = R_ves + Thickness
@@ -143,8 +143,8 @@ U_1 = 1 / (R_1 / Thermal_conductivity_ins * math.log(R_2 / R_1) + R_1 / (R_2 * h
 # global heat transfer coefficient insulator-cpp
 U_2 = 1 / (R_2 / Thermal_conductivity_ins * math.log(R_2 / R_1) + 1 / h_2)
 
-print(f"U1 vessel-thermal insulation= {U_1:.5} W / K")
-print(f"U2 insulator-cpp= {U_2:.5} W / K")
+# print(f"U1 vessel-thermal insulation= {U_1:.5} W / K")
+# print(f"U2 insulator-cpp= {U_2:.5} W / K")
 
 # Point 6
 Phi_0 = Phi_0 * 1e4
@@ -183,66 +183,66 @@ B = (
     + q03 / (Mu_steel * h_1)
 )
 
-x = np.linspace(0, Thickness, 100)
-T = (
-    -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
-    + A * x
-    + B
-)
+# x = np.linspace(0, Thickness, 100)
+# T = (
+#     -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
+#     + A * x
+#     + B
+# )
 
-plt.figure(figsize=(6, 5))
-plt.plot(x, T, label="Temperature profile")
-plt.xlabel("x (m)")
-plt.ylabel("Temperature (K)")
-plt.title("Temperature profile inside RPV wall")
-plt.minorticks_on()
-plt.grid(True)
+# plt.figure(figsize=(6, 5))
+# plt.plot(x, T, label="Temperature profile")
+# plt.xlabel("x (m)")
+# plt.ylabel("Temperature (K)")
+# plt.title("Temperature profile inside RPV wall")
+# plt.minorticks_on()
+# plt.grid(True)
 
-q_second = (T_1 - T_2) / (
-    1 / h_1
-    + Thickness / (Thermal_conductivity_steel * Area)
-    + Thick_insulation / Thermal_conductivity_ins
-    + 1 / h_2
-)
+# q_second = (T_1 - T_2) / (
+#     1 / h_1
+#     + Thickness / (Thermal_conductivity_steel * Area)
+#     + Thick_insulation / Thermal_conductivity_ins
+#     + 1 / h_2
+# )
 
 # Point 7 cylinder
-U_1c = 1 / (
-    1 / h_1
-    + R_ves / Thermal_conductivity_steel * np.log((R_ves + Thickness) / R_ves)
-    + R_ves
-    / Thermal_conductivity_ins
-    * np.log((R_ves + Thickness + Thick_insulation) / (R_ves + Thick_insulation))
-    + R_ves / (R_ves + Thickness + Thick_insulation) * 1 / h_2
-)
+# U_1c = 1 / (
+#     1 / h_1
+#     + R_ves / Thermal_conductivity_steel * np.log((R_ves + Thickness) / R_ves)
+#     + R_ves
+#     / Thermal_conductivity_ins
+#     * np.log((R_ves + Thickness + Thick_insulation) / (R_ves + Thick_insulation))
+#     + R_ves / (R_ves + Thickness + Thick_insulation) * 1 / h_2
+# )
 
 # global heat transfer coefficient insulator-cpp
-U_2c = 1 / (
-    (R_ves + Thickness) / R_ves * 1 / h_1
-    + (R_ves + Thickness)
-    / Thermal_conductivity_steel
-    * np.log((R_ves + Thickness) / R_ves)
-    + (R_ves + Thickness)
-    / Thermal_conductivity_ins
-    * np.log((R_ves + Thickness + Thick_insulation) / (R_ves + Thick_insulation))
-    + (R_ves + Thickness) / (R_ves + Thickness + Thick_insulation) * 1 / h_2
-)
+# U_2c = 1 / (
+#     (R_ves + Thickness) / R_ves * 1 / h_1
+#     + (R_ves + Thickness)
+#     / Thermal_conductivity_steel
+#     * np.log((R_ves + Thickness) / R_ves)
+#     + (R_ves + Thickness)
+#     / Thermal_conductivity_ins
+#     * np.log((R_ves + Thickness + Thick_insulation) / (R_ves + Thick_insulation))
+#     + (R_ves + Thickness) / (R_ves + Thickness + Thick_insulation) * 1 / h_2
+# )
 
-print(f"U1 vessel-thermal insulation= {U_1c:.5} W / K")
-print(f"U2 insulator-cpp= {U_2c:.5} W / K")
+# print(f"U1 vessel-thermal insulation= {U_1c:.5} W / K")
+# print(f"U2 insulator-cpp= {U_2c:.5} W / K")
 
-A_c = -R_ves / Thermal_conductivity_steel * U_1c * (T_1 - T_2)
-B_c = -(R_ves + Thickness) / Thermal_conductivity_steel * U_2c * (T_1 - T_2)
-r = np.linspace(1e-5, Thickness, 100)
+# A_c = -R_ves / Thermal_conductivity_steel * U_1c * (T_1 - T_2)
+# B_c = -(R_ves + Thickness) / Thermal_conductivity_steel * U_2c * (T_1 - T_2)
+# r = np.linspace(1e-5, Thickness, 100)
 
-T_c = A_c * np.log(r) + B_c
+# T_c = A_c * np.log(r) + B_c
 
-plt.figure(figsize=(6, 5))
-plt.plot(r, T_c, label="Temperature profile")
-plt.xlabel("x (m)")
-plt.ylabel("Temperature (K)")
-plt.title("Temperature profile inside RPV wall (cylinder)")
-plt.minorticks_on()
-plt.grid(True)
+# plt.figure(figsize=(6, 5))
+# plt.plot(r, T_c, label="Temperature profile")
+# plt.xlabel("x (m)")
+# plt.ylabel("Temperature (K)")
+# plt.title("Temperature profile inside RPV wall (cylinder)")
+# plt.minorticks_on()
+# plt.grid(True)
 
 
 # Point 2
@@ -254,78 +254,80 @@ idx = 4
 
 while toll >= 1:
     Thickness = (P_des * R_ves) / (S_m[idx] * 1e6 - 0.5 * P_des)
-    # Costruisco il sistema lineare per A e B
+    # Linear system for A and B
+    # Equation for A
+    term1 = (
+        -(q03 * Thick_insulation)
+        / (Mu_steel * Thermal_conductivity_ins)
+        * np.exp(-Mu_steel * Thickness)
+    )
+    term2 = -(Thick_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
+        -Mu_steel * Thickness
+    )
+    term3 = (q03 / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
+        -Mu_steel * Thickness
+    )
+    term4 = -T_1
+    term5 = -q03 / (Mu_steel**2 * Thermal_conductivity_steel)
+    term6 = -q03 / (Mu_steel * h_1)
 
-    # Equazione 1 ricavata dal tuo calcolo di A:
-    # A = numerator / denominator
-    #  → A * denominator - numerator = 0
+    numerator = term1 + term2 + term3 + term4 + term5 + term6
+    denominator = (
+        Thickness
+        + Thermal_conductivity_steel / h_1
+        + Thermal_conductivity_steel / h_2
+        + (Thermal_conductivity_steel * Thick_insulation) / Thermal_conductivity_ins
+    )
     alpha1 = denominator
     beta1 = 0
     gamma1 = numerator
 
-    # Equazione 2 ricavata dalla tua formula per B:
-    # B = T_1 + q03/(mu^2 k) + (k/h1)*A + q03/(mu h1)
-    #  → (-k/h1) * A + B = T1 + ...
+    # Equation for B
     alpha2 = -(Thermal_conductivity_steel / h_1)
     beta2 = 1
     gamma2 = (
         T_1 + q03 / (Mu_steel**2 * Thermal_conductivity_steel) + q03 / (Mu_steel * h_1)
     )
 
-    # Matrici per il sistema
+    # Matrices for the system
     A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
 
+    # Coefficients vector
     b_vec = np.array([gamma1, gamma2])
 
-    # 🔥 Soluzione immediata
+    # Solutions
     A, B = np.linalg.solve(A_mat, b_vec)
 
-    T = (
-        -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
-        + A * x
-        + B
-    )
-
+    # Print average pressure
     if T_avg == T_prev:
-        print(f"Temperatura media: {T_avg}")
+        print(f"Temperatura media: {T_avg} K")
 
-    T_des = T_integral_norm(Thickness, q03, Mu_steel, Thermal_conductivity_steel, A, B)
+    # Calculate and print average pressure
+    T_int, err = integrate.quad(T, 0.0, Thickness)
+    T_des = T_int / Thickness
+    print(f"Temperatura design: {T_des:.5} K")
 
-    print(f"Temperatura design: {T_des}")
+    # Calculate tollerance and update previous pressure
     toll = np.absolute(T_prev - T_des)
     T_prev = T_des
     T_des = T_des - Kelvin
 
+    # Get index for the closest pressure
     idx = np.where(Temperature > T_des, Temperature - T_des, np.inf).argmin()
 
+    # Print results
     print(
-        f"Spessore: {np.round(Thickness * 100, 10)} | Temperatura: {T_des:.5} | Indice: {idx} | Tolleranza: {toll:.5} | Ultimate: {S_m[idx]}"
+        f"Spessore: {np.round(Thickness * 100, 10)} cm | Temperatura: {T_des:.5} C | Indice: {idx} | Tolleranza: {toll:.5} | Ultimate: {S_m[idx]} MPa"
     )
 
 
-Area = math.pi * (D_ves**2 - D_bar**2) / 4
-Velocity = Flow_rate / (Density * Area)
+# Point ???
 
-Re = (Density * Velocity * D_e) / Viscosity_I
-Pr_I = (Viscosity_I * Cp_I) / Thermal_conductivity_I
-Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
-
-h_1 = (Nu_I * Thermal_conductivity_I) / D_e
-
+# Convective heat transfer coefficient for primary fluid
 print(f"Convective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
 
-# convective heat transfer coefficient for secondary fluid
-# external diameter
-D_ext = D_ves + 2 * Thickness + 2 * Thick_insulation
-
-Pr_II = (Viscosity_II * Cp_II) / Thermal_conductivity_II
-Gr = (g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
-Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
-
-h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
-
+# Convective heat transfer coefficient for secondary fluid
 print(f"Convective heat transfer coefficient 2= {h_2:.5} W / m^2 K")
-
 
 R_1 = R_ves + Thickness
 R_2 = R_1 + Thick_insulation
@@ -340,42 +342,8 @@ print(f"U1 vessel-thermal insulation= {U_1:.5} W / K")
 print(f"U2 insulator-cpp= {U_2:.5} W / K")
 
 # Point 6
-Phi_0 = Phi_0 * 1e4
-Energy_gamma = Energy_gamma * eV
-q03 = Phi_0 * Energy_gamma * Mu_steel * Build_up
 
-term1 = (
-    -(q03 * Thick_insulation)
-    / (Mu_steel * Thermal_conductivity_ins)
-    * np.exp(-Mu_steel * Thickness)
-)
-term2 = -(Thick_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
-    -Mu_steel * Thickness
-)
-term3 = (q03 / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
-    -Mu_steel * Thickness
-)
-term4 = -T_1
-term5 = -q03 / (Mu_steel**2 * Thermal_conductivity_steel)
-term6 = -q03 / (Mu_steel * h_1)
-
-numerator = term1 + term2 + term3 + term4 + term5 + term6
-denominator = (
-    Thickness
-    + Thermal_conductivity_steel / h_1
-    + Thermal_conductivity_steel / h_2
-    + (Thermal_conductivity_steel * Thick_insulation) / Thermal_conductivity_ins
-)
-
-A = numerator / denominator
-
-B = (
-    T_1
-    + q03 / (Mu_steel**2 * Thermal_conductivity_steel)
-    + (Thermal_conductivity_steel * A) / h_1
-    + q03 / (Mu_steel * h_1)
-)
-
+# Plot temperature profile
 x = np.linspace(0, Thickness, 100)
 T = (
     -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
@@ -391,6 +359,7 @@ plt.title("Temperature profile inside RPV wall")
 plt.minorticks_on()
 plt.grid(True)
 
+# Calculate heating
 q_second = (T_1 - T_2) / (
     1 / h_1
     + Thickness / (Thermal_conductivity_steel * Area)
@@ -433,7 +402,7 @@ else:
 
 
 A_c = -R_ves / Thermal_conductivity_steel * U_1c * (T_1 - T_2)
-B_c = -(R_ves + Thickness) / Thermal_conductivity_steel * U_2c * (T_1 - T_2)
+B_c = -(U_1c / h_1 * (T_1 - T_2) - T_1 + A_c * np.log(R_ves))
 r = np.linspace(R_ves, R_ves + Thickness, 100)
 
 T_c = A_c * np.log(r) + B_c
@@ -448,27 +417,24 @@ plt.grid(True)
 plt.show()
 
 
-check = (U_1c * R_ves) / (U_2c * (R_ves + Thickness))
-
-if round(check, 4) == 1:
-    print(f"ok, ratio is: {round(check, 4)}")
-else:
-    print(f"not ok, ratio is: {round(check, 4)}")
-
 # Point 8
+# Tresca
 P_m = P_des * R_ves / Thickness + P_des / 2
-if P_m <= (S_m[4] * 1e6):
-    print(f"Good, {P_m:.5} is less than {S_m[4]}")
+Stress_I = S_m[idx] * 1e6
+if P_m <= Stress_I:
+    print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
 else:
-    print(f"Not good, {P_m:.5} is more than {S_m[4]}")
+    print(f"Not good, {P_m:.5} is more than {Stress_I:.5}")
 
+# Thermal stresses
 Q = (Sigma_T * Alpha_T * E * q03) / (
     Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2
 )
 
+# Mechanical and thermal stresses
 test = Q + P_m
-test_y = 2 * S_y[4]
-if test <= test_y:
-    print(f"Good, {test:.5} is less than {test_y}")
+test_y = 2 * S_y[idx] * 1e6
+if test < test_y:
+    print(f"Good, {test:.5} is less than {test_y:.5}")
 else:
-    print(f"Not good, {test:.5} is more than {test_y}")
+    print(f"Not good, {test:.5} is more than {test_y:.5}")
