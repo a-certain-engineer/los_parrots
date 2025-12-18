@@ -31,6 +31,8 @@ E = 177.0e9  # Pa
 Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
 Sigma_T = 0.56
+S_corradi = 2
+P_des_ext = 75  # bar
 
 # ASME III data for considered steel
 Temperature = np.array(
@@ -94,7 +96,7 @@ Energy_gamma = Energy_gamma * eV
 
 
 # Define temperature function
-def T(x):
+def Temperature_profile(x):
     return (
         -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
         + A * x
@@ -105,6 +107,7 @@ def T(x):
 # Point 2
 # Design pressure
 P_des = P_des * 1e5  # Pa
+P_des_ext = P_des_ext * 1e5  # Pa
 
 # Guess design temperature
 T_des = 270  # °C
@@ -223,7 +226,7 @@ while toll >= 1:
         print(f"Temperatura media: {T_avg} K")
 
     # Calculate and print average pressure
-    T_int, err = integrate.quad(T, 0.0, Thickness)
+    T_int, err = integrate.quad(Temperature_profile, 0.0, Thickness)
     T_des = T_int / Thickness
     print(f"Temperatura design: {T_des:.5} K")
 
@@ -241,8 +244,144 @@ while toll >= 1:
     )
 
 
-# Point ???
+# Buckling
+D_1 = (D_ves + 1.25) / 200
+D_2 = D_ves / 100
+Delta_D_max = min(D_1, D_2)
+W = Delta_D_max / D_ves
+t_cr = D_ves / (math.sqrt(E / (S_y[idx] * 1e6 * (1 - Nu**2))))
+sigma_lim = 2 / 3 * S_y[idx] * 1e6
+max_iter = 1000
+increment = 1e-4
+P_all = 0
+iteration = 0
+# print(f"{Delta_D_max}")
+# print(f"{W}")
+# print(f"{sigma_lim}")
 
+Thickness_min = (P_des_ext * R_ves) / (sigma_lim - 0.5 * P_des_ext)
+
+while P_all < P_des_ext and iteration <= max_iter:
+    Thickness_buckling = Thickness_min + iteration * increment
+
+    slender = D_ves / Thickness_buckling
+    D_ext = D_ves + 2 * Thickness_buckling
+
+    Z = math.sqrt(3) / 4 * (2 * D_ext / Thickness_buckling + 1) * W
+
+    q_E = (
+        (2 * E)
+        / (1 - Nu**2)
+        * 1
+        / (D_ext / Thickness_buckling * (D_ext / Thickness_buckling - 1) ** 2)
+    )
+    q_0 = (
+        2
+        * S_y[idx]
+        * 1e6
+        * Thickness_buckling
+        / D_ext
+        * (1 + 0.5 * Thickness_buckling / D_ext)
+    )
+
+    q_U = q_0 / math.sqrt(1 + Z**2)
+    sqrt_term = (q_0 + q_E * (1 + Z)) ** 2 - 4 * q_0 * q_E
+    if sqrt_term < 0:
+        sqrt_term = 0
+    q_L = 0.5 * (q_0 + q_E * (1 + Z) - math.sqrt(sqrt_term))
+
+    q_ratio = q_0 / q_E
+
+    if q_ratio < 0.04:
+        mu = 1.0
+    elif q_ratio > 0.7:
+        mu = 0.0
+    else:
+        mu = 0.35 * np.log(q_E / q_0) - 0.125
+
+    q_C = mu * q_U + (1 - mu) * q_L
+
+    P_all = q_C / S_corradi
+    # print(
+    #     f"Iteration {iteration}: Thickness = {Thickness_buckling:.5f}, P_all = {P_all:.2f}"
+    # )
+
+    iteration += 1
+
+print(f"Final thickness for buckling: {Thickness_buckling * 100:.5f} cm")
+
+Thickness = Thickness_buckling
+T_prev = T_avg
+toll = 10
+
+while toll >= 1:
+    # Linear system for A and B
+    # Equation for A
+    term1 = (
+        -(q03 * Thick_insulation)
+        / (Mu_steel * Thermal_conductivity_ins)
+        * np.exp(-Mu_steel * Thickness)
+    )
+    term2 = -(Thick_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
+        -Mu_steel * Thickness
+    )
+    term3 = (q03 / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
+        -Mu_steel * Thickness
+    )
+    term4 = -T_1
+    term5 = -q03 / (Mu_steel**2 * Thermal_conductivity_steel)
+    term6 = -q03 / (Mu_steel * h_1)
+
+    numerator = term1 + term2 + term3 + term4 + term5 + term6
+    denominator = (
+        Thickness
+        + Thermal_conductivity_steel / h_1
+        + Thermal_conductivity_steel / h_2
+        + (Thermal_conductivity_steel * Thick_insulation) / Thermal_conductivity_ins
+    )
+    alpha1 = denominator
+    beta1 = 0
+    gamma1 = numerator
+
+    # Equation for B
+    alpha2 = -(Thermal_conductivity_steel / h_1)
+    beta2 = 1
+    gamma2 = (
+        T_1 + q03 / (Mu_steel**2 * Thermal_conductivity_steel) + q03 / (Mu_steel * h_1)
+    )
+
+    # Matrices for the system
+    A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
+
+    # Coefficients vector
+    b_vec = np.array([gamma1, gamma2])
+
+    # Solutions
+    A, B = np.linalg.solve(A_mat, b_vec)
+
+    # Print average pressure
+    if T_avg == T_prev:
+        print(f"Temperatura media: {T_avg} K")
+
+    # Calculate and print average pressure
+    T_int, err = integrate.quad(Temperature_profile, 0.0, Thickness)
+    T_des = T_int / Thickness
+    print(f"Temperatura design: {T_des:.5} K")
+
+    # Calculate tollerance and update previous pressure
+    toll = np.absolute(T_prev - T_des)
+    T_prev = T_des
+    T_des = T_des - Kelvin
+
+    # Get index for the closest pressure
+    idx = np.where(Temperature > T_des, Temperature - T_des, np.inf).argmin()
+
+    # Print results
+    print(
+        f"Spessore: {np.round(Thickness * 100, 10)} cm | Temperatura: {T_des:.5} C | Indice: {idx} | Tolleranza: {toll:.5} | Ultimate: {S_m[idx]} MPa"
+    )
+
+# Point ???
 # Convective heat transfer coefficient for primary fluid
 print(f"Convective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
 
@@ -352,7 +491,25 @@ plt.show()
 # Point 8
 # Mechanical stresses
 P_m = P_des * R_ves / Thickness + P_des / 2
+Sigma_r = (
+    -(R_ves**2)
+    / ((R_ves + Thickness) ** 2 - R_ves**2)
+    * ((R_ves + Thickness) ** 2 / r**2 - 1)
+    * P_des
+)
+Sigma_theta = (
+    +(R_ves**2)
+    / ((R_ves + Thickness) ** 2 - R_ves**2)
+    * ((R_ves + Thickness) ** 2 / r**2 + 1)
+    * P_des
+)
+
+Sigma_Lame = np.max(Sigma_theta - Sigma_r)
+idx_max = np.argmax(Sigma_theta - Sigma_r)
+pos = r[idx_max]
+
 Stress_I = S_m[idx] * 1e6
+
 if P_m <= Stress_I:
     print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
 else:
@@ -364,7 +521,7 @@ Q = (Sigma_T * Alpha_T * E * q03) / (
 )
 
 # Mechanical and thermal stresses
-test = Q + P_m
+test = Q + Sigma_Lame
 test_y = 2 * S_y[idx] * 1e6
 if test < test_y:
     print(f"Good, {test:.5} is less than {test_y:.5}")

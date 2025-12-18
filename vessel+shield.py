@@ -1,5 +1,5 @@
 # import math
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 # import scipy.integrate as integrate
 
@@ -104,5 +104,6 @@ Thickness = 0.157468271335  # m
 h_1 = 7498.1  # W / m^2 K
 
 # From shield
-Thickness_shield = 0.0345
+Thickness_shield = 0.034559021275925854
 
+Thickness = 1.1 * Thickness
