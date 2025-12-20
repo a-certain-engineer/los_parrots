@@ -131,13 +131,60 @@ def integrand_function(rho, A, B):
     return Temperature_profile(x_local, A, B) * rho
 
 
+def solve_coefficients(t, h_1, h_2):
+    term1 = (
+        -(q03_prime * Thick_insulation)
+        / (Mu_steel * Thermal_conductivity_ins)
+        * np.exp(-Mu_steel * t)
+    )
+    term2 = -(Thick_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
+        -Mu_steel * t
+    )
+    term3 = (q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
+        -Mu_steel * t
+    )
+    term4 = -T_1
+    term5 = -q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
+    term6 = -q03_prime / (Mu_steel * h_1)
+
+    numerator = term1 + term2 + term3 + term4 + term5 + term6
+    denominator = (
+        t
+        + Thermal_conductivity_steel / h_1
+        + Thermal_conductivity_steel / h_2
+        + (Thermal_conductivity_steel * Thick_insulation) / Thermal_conductivity_ins
+    )
+    alpha1 = denominator
+    beta1 = 0
+    gamma1 = numerator
+
+    # Equation for B
+    alpha2 = -(Thermal_conductivity_steel / h_1)
+    beta2 = 1
+    gamma2 = (
+        T_1
+        + q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
+        + q03_prime / (Mu_steel * h_1)
+    )
+
+    # Matrices for the system
+    A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
+
+    # Coefficients vector
+    b_vec = np.array([gamma1, gamma2])
+
+    # Solve matrix equation
+    A, B = np.linalg.solve(A_mat, b_vec)
+
+    return (A, B)
+
+
 # h1  per calcoli
 # Convective heat transfer coefficient for primary fluid
 Area = math.pi * (D_ves**2 - D_bar**2) / 4 - math.pi / 4 * (
     (a + Thickness_shield) ** 2 - a**2
 )
 Velocity = Flow_rate / (Density * Area)
-print(Velocity)
 
 Re = (Density * Velocity * D_e) / Viscosity_I
 Pr_I = (Viscosity_I * Cp_I) / Thermal_conductivity_I
@@ -160,57 +207,11 @@ T_prev = T_avg
 toll = 10
 idx = 4
 
+print("Tresca thickness")
 while toll >= 1:
     Thickness_tresca = (P_des * R_ves) / (S_m[idx] * 1e6 - 0.5 * P_des)
-    # Linear system for A and B
-    # Equation for A
-    term1 = (
-        -(q03_prime * Thick_insulation)
-        / (Mu_steel * Thermal_conductivity_ins)
-        * np.exp(-Mu_steel * Thickness_tresca)
-    )
-    term2 = -(Thick_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
-        -Mu_steel * Thickness_tresca
-    )
-    term3 = (q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
-        -Mu_steel * Thickness_tresca
-    )
-    term4 = -T_1
-    term5 = -q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-    term6 = -q03_prime / (Mu_steel * h_1)
 
-    numerator = term1 + term2 + term3 + term4 + term5 + term6
-    denominator = (
-        Thickness_tresca
-        + Thermal_conductivity_steel / h_1
-        + Thermal_conductivity_steel / h_2
-        + (Thermal_conductivity_steel * Thick_insulation) / Thermal_conductivity_ins
-    )
-    alpha1 = denominator
-    beta1 = 0
-    gamma1 = numerator
-
-    # Equation for B
-    alpha2 = -(Thermal_conductivity_steel / h_1)
-    beta2 = 1
-    gamma2 = (
-        T_1
-        + q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-        + q03_prime / (Mu_steel * h_1)
-    )
-
-    # Matrices for the system
-    A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
-
-    # Coefficients vector
-    b_vec = np.array([gamma1, gamma2])
-
-    # Solutions
-    A_tresca, B_tresca = np.linalg.solve(A_mat, b_vec)
-
-    # Print average pressure
-    if T_avg == T_prev:
-        print(f"Temperatura media: {T_avg} K")
+    A_tresca, B_tresca = solve_coefficients(Thickness_tresca, h_1, h_2)
 
     # Calculate and print average pressure
     T_int, err = integrate.quad(
@@ -229,9 +230,8 @@ while toll >= 1:
 
     # Print results
     print(
-        f"Spessore: {np.round(Thickness_tresca * 100, 10)} cm | Temperatura: {T_des:.5} C | Indice: {idx} | Tolleranza: {toll:.5} | Ultimate: {S_m[idx]} MPa"
+        f"Thickness: {Thickness_tresca * 100:.5} cm | Desgin temperature: {T_des:.5} C | Index: {idx} | Tollerance: {toll:.5} | Ultimate strength: {S_m[idx]} MPa"
     )
-
 
 # Buckling
 D_1 = (D_ves + 1.25) / 200
@@ -244,58 +244,15 @@ max_iter = 1000
 increment = 1e-4
 P_all = 0
 iteration = 0
-# print(f"{Delta_D_max}")
-# print(f"{W}")
-# print(f"{sigma_lim}")
 
 Thickness_min = (P_des_ext * R_ves) / (sigma_lim - 0.5 * P_des_ext)
 
+print("\nBuckling thickness")
 while P_all < P_des_ext and iteration <= max_iter:
     Thickness_buckling = Thickness_min + iteration * increment
 
-    term1 = (
-        -(q03_prime * Thick_insulation)
-        / (Mu_steel * Thermal_conductivity_ins)
-        * np.exp(-Mu_steel * Thickness_buckling)
-    )
-    term2 = -(Thick_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
-        -Mu_steel * Thickness_buckling
-    )
-    term3 = (q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
-        -Mu_steel * Thickness_buckling
-    )
-    term4 = -T_1
-    term5 = -q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-    term6 = -q03_prime / (Mu_steel * h_1)
-
-    numerator = term1 + term2 + term3 + term4 + term5 + term6
-    denominator = (
-        Thickness_buckling
-        + Thermal_conductivity_steel / h_1
-        + Thermal_conductivity_steel / h_2
-        + (Thermal_conductivity_steel * Thick_insulation) / Thermal_conductivity_ins
-    )
-    alpha1 = denominator
-    beta1 = 0
-    gamma1 = numerator
-
-    # Equation for B
-    alpha2 = -(Thermal_conductivity_steel / h_1)
-    beta2 = 1
-    gamma2 = (
-        T_1
-        + q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-        + q03_prime / (Mu_steel * h_1)
-    )
-
-    # Matrices for the system
-    A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
-
-    # Coefficients vector
-    b_vec = np.array([gamma1, gamma2])
-
     # Solutions
-    A_buckling, B_buckling = np.linalg.solve(A_mat, b_vec)
+    A_buckling, B_buckling = solve_coefficients(Thickness_buckling, h_1, h_2)
 
     # Print average pressure
     if T_avg == T_prev:
@@ -356,16 +313,18 @@ while P_all < P_des_ext and iteration <= max_iter:
 
     iteration += 1
 
-print(f"Final thickness for buckling: {Thickness_buckling * 100:.5f} cm")
+print(
+    f"Final thickness for buckling: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des:.5f} C"
+)
 
 if Thickness_buckling > Thickness_tresca:
     Thickness_vessel = Thickness_buckling
     A, B = A_buckling, B_buckling
-    print("Governing criterion: Buckling")
+    print("Governing criterion: Buckling\n")
 else:
     Thickness_vessel = Thickness_tresca
     A, B = A_tresca, B_tresca
-    print("Governing criterion: Tresca")
+    print("Governing criterion: Tresca\n")
 
 
 # Point 4
@@ -429,6 +388,7 @@ plt.ylabel("Temperature (K)")
 plt.title("Temperature profile inside vessel")
 plt.minorticks_on()
 plt.grid()
+plt.show()
 
 # Point 7
 U_1c = 1 / (
@@ -480,7 +440,6 @@ plt.ylabel("Temperature (K)")
 plt.title("Temperature profile inside RPV wall (cylinder)")
 plt.minorticks_on()
 plt.grid(True)
-plt.show()
 
 # Point 8
 # Mechanical stresses

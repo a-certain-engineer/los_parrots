@@ -35,7 +35,7 @@ Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
 Sigma_T_1 = 0.56  # From graph
 Sigma_T_2 = 0.08  # From graph
-a = 2.75
+a = 2.75  # m
 
 # ASME III data for considered steel
 Temperature = np.array(
@@ -107,7 +107,7 @@ h_1 = 7498.1  # W / m^2 K
 Sigma_Lame = 93930646.91706014  # Pa
 
 
-def Tempreture_profile(x):
+def Temperature_profile(x, A, B):
     return (
         -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
         + A * x
@@ -115,12 +115,16 @@ def Tempreture_profile(x):
     )
 
 
+def integrand_function(rho, A, B):
+    x_local = rho - a
+    return Temperature_profile(x_local, A, B) * rho
+
+
 # Point 4
 q03_prime = (3 * S_m[idx] * 1e6 - Sigma_Lame) / (
     (Sigma_T_1 * Alpha_T * E) / (Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2)
 )
 
-print(f"{q03_prime}")
 Shield_thickness = -1 / Mu_steel * np.log(q03_prime / (q03 * Build_up))
 
 print(f"Thermal shield thickness: {Shield_thickness * 100:.5} cm")
@@ -149,16 +153,21 @@ T_shield = (
 T_shield_avg = np.average(T_shield)
 T_shield_max = np.max(T_shield)
 T_shield_min = np.min(T_shield)
-print(f"{T_shield_avg}")
-print(f"{T_shield_min}")
-print(f"{T_shield_max}")
+print(f"Design temperature: {T_shield_avg - Kelvin:.5} C")
+print(f"Minimum shield temperature: {T_shield_min:.5} C")
+print(f"Maximum shield temperature: {T_shield_max:.5} C")
 
 idx_max = np.argmax(T_shield)
 pos = x[idx_max]
-print(f"{pos * 100}")
+
+T_shield_avg_C = T_shield_avg - Kelvin
+idx_S_m = np.where(
+    Temperature >= T_shield_avg_C, Temperature - T_shield_avg_C, np.inf
+).argmin()
+
 
 plt.figure(figsize=(6, 5))
-plt.plot(x, T_shield, label="Temperature progile in the thermal shield")
+plt.plot(x, T_shield, label="Temperature profile in the thermal shield")
 plt.xlabel("x (m)")
 plt.ylabel("Temperature (K)")
 plt.title("Temperature profile in the thermal shield")
@@ -179,73 +188,57 @@ Q = (Sigma_T_2 * Alpha_T * E * q03) / (
     Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2
 )
 
-# --- DEBUGGED SECTION FOR POINT 6 ---
-
-# 1. SETUP GEOMETRY (Absolute Radius)
-# We assume 'a' is the inner radius of the shield.
-# If the shield is inside the vessel, check if a = R_ves - Shield_thickness or similar.
-# Based on your variable 'R_ves', let's assume the shield starts at 'a' and goes out.
+# Point 3
+# Outer shield radius
 b = a + Shield_thickness
 
-# r must be absolute radius from center (a -> b), NOT 0 -> thickness
 r = np.linspace(a, b, 100)
 
-
-# 2. DEFINE INTEGRAND FUNCTION
-# The integral requires T(rho) * rho.
-# Since T_profile takes 'x' (0 to thickness), we pass (rho - a).
-def integrand_function(rho):
-    x_local = rho - a
-    return Tempreture_profile(x_local) * rho
-
-
-# 3. CALCULATE CONSTANT INTEGRAL (Total integral from a to b)
-integral_ab, err = integrate.quad(integrand_function, a, b)
+# Temperature profile integral from a to b
+integral_ab, err = integrate.quad(integrand_function, a, b, args=(A, B))
 
 # Initialize arrays
 Sigma_r = np.zeros(len(r))
 Sigma_theta = np.zeros(len(r))
 Sigma_Lame = np.zeros(len(r))
 
-# 4. CONSTANTS FOR LOOP
-# Correct denominator is (b^2 - a^2)
+# Constant factors
 geom_denom = b**2 - a**2
 const_factor = (Alpha_T * E) / (1 - Nu)
 
-print("Calculating thermal stresses...")
 
 for i in range(len(r)):
     radius = r[i]
 
-    # Calculate variable integral from a to current radius
-    integral_ar, err = integrate.quad(integrand_function, a, radius)
+    # Variable integral from a to radius
+    integral_ar, err = integrate.quad(integrand_function, a, radius, args=(A, B))
 
-    # Get Temperature at this radius
-    Temp_val = Tempreture_profile(radius - a)
+    # Temperature at current radius
+    Temp_val = Temperature_profile(radius - a, A, B)
 
-    # Radial Stress Formula
+    # Radial stress formula
     term_1 = ((radius**2 - a**2) / (geom_denom * radius**2)) * integral_ab
     term_2 = (1 / radius**2) * integral_ar
     Sigma_r[i] = const_factor * (term_1 - term_2)
 
-    # Tangential (Hoop) Stress Formula
+    # Hoop stress formula
     term_3 = ((radius**2 + a**2) / (geom_denom * radius**2)) * integral_ab
     term_4 = (1 / radius**2) * integral_ar
     term_5 = Temp_val
     Sigma_theta[i] = const_factor * (term_3 + term_4 - term_5)
 
-    # Lame Stress (Von Mises equivalent or Tresca)
-    # Usually absolute difference |sigma_theta - sigma_r|
+    # Lame Stress
     Sigma_Lame[i] = abs(Sigma_theta[i] - Sigma_r[i])
 
-# 5. CHECK RESULTS
+# Maximum Lamé stress and stress intensity
 Sigma_Lame_max = np.max(Sigma_Lame)
-Limit_Stress = 3 * S_m[idx] * 1e6
-
-print(f"Max Sigma_Lame: {Sigma_Lame_max / 1e6:.2f} MPa")
-print(f"Limit Stress: {Limit_Stress / 1e6:.2f} MPa")
+Limit_Stress = 3 * S_m[idx_S_m] * 1e6
 
 if Sigma_Lame_max <= Limit_Stress:
-    print("Good: Thermal stress is within limits.")
+    print(
+        f"Good: Thermal stress ({Sigma_Lame_max:.5}) is within limits ({Limit_Stress:.5})"
+    )
 else:
-    print("Bad: Thermal stress exceeds limits.")
+    print(
+        f"Bad: Thermal stress ({Sigma_Lame_max:.5}) is not within limits ({Limit_Stress:.5})"
+    )
