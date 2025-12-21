@@ -1,7 +1,7 @@
-# import math
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
+import functions
 
 # variables
 P_des = 85  # bar
@@ -9,7 +9,7 @@ T_des = 214  # °C
 T_fluid = 214  # °C
 D_bar = 2.5  # m
 D_ves = 3.0  # m
-Thick_insulation = 0.05  # m
+Thickness_insulation = 0.05  # m
 Density = 852.50  # Kg/m3
 Flow_rate = 3227  # Kg / s
 Viscosity_I = 1.259e-4  # Pa s
@@ -106,20 +106,6 @@ Thickness = 0.157468271335  # m
 h_1 = 7498.1  # W / m^2 K
 Sigma_Lame = 93930646.91706014  # Pa
 
-
-def Temperature_profile(x, A, B):
-    return (
-        -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
-        + A * x
-        + B
-    )
-
-
-def integrand_function(rho, A, B):
-    x_local = rho - a
-    return Temperature_profile(x_local, A, B) * rho
-
-
 # Point 4
 q03_prime = (3 * S_m[idx] * 1e6 - Sigma_Lame) / (
     (Sigma_T_1 * Alpha_T * E) / (Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2)
@@ -195,7 +181,7 @@ b = a + Shield_thickness
 r = np.linspace(a, b, 100)
 
 # Temperature profile integral from a to b
-integral_ab, err = integrate.quad(integrand_function, a, b, args=(A, B))
+integral_ab, err = integrate.quad(functions.integrand_function, a, b, args=(A, B, q03))
 
 # Initialize arrays
 Sigma_r = np.zeros(len(r))
@@ -211,10 +197,12 @@ for i in range(len(r)):
     radius = r[i]
 
     # Variable integral from a to radius
-    integral_ar, err = integrate.quad(integrand_function, a, radius, args=(A, B))
+    integral_ar, err = integrate.quad(
+        functions.integrand_function, a, radius, args=(A, B, q03_prime)
+    )
 
     # Temperature at current radius
-    Temp_val = Temperature_profile(radius - a, A, B)
+    Temp_val = functions.Temperature_profile(radius - a, A, B, q03)
 
     # Radial stress formula
     term_1 = ((radius**2 - a**2) / (geom_denom * radius**2)) * integral_ab
