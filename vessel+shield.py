@@ -117,69 +117,6 @@ q03 = Energy_gamma * Phi_0 * Build_up * Mu_steel
 
 # Thickness_vessel = 1.1 * Thickness_vessel
 
-
-# Define temperature function
-def Temperature_profile(x, A, B):
-    return (
-        -q03_prime / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
-        + A * x
-        + B
-    )
-
-
-def integrand_function(rho, A, B):
-    x_local = rho - R_ves
-    return Temperature_profile(x_local, A, B) * rho
-
-
-def solve_coefficients(t, h_1, h_2):
-    term1 = (
-        -(q03_prime * Thickness_insulation)
-        / (Mu_steel * Thermal_conductivity_ins)
-        * np.exp(-Mu_steel * t)
-    )
-    term2 = -(Thickness_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
-        -Mu_steel * t
-    )
-    term3 = (q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
-        -Mu_steel * t
-    )
-    term4 = -T_1
-    term5 = -q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-    term6 = -q03_prime / (Mu_steel * h_1)
-
-    numerator = term1 + term2 + term3 + term4 + term5 + term6
-    denominator = (
-        t
-        + Thermal_conductivity_steel / h_1
-        + Thermal_conductivity_steel / h_2
-        + (Thermal_conductivity_steel * Thickness_insulation) / Thermal_conductivity_ins
-    )
-    alpha1 = denominator
-    beta1 = 0
-    gamma1 = numerator
-
-    # Equation for B
-    alpha2 = -(Thermal_conductivity_steel / h_1)
-    beta2 = 1
-    gamma2 = (
-        T_1
-        + q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-        + q03_prime / (Mu_steel * h_1)
-    )
-
-    # Matrices for the system
-    A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
-
-    # Coefficients vector
-    b_vec = np.array([gamma1, gamma2])
-
-    # Solve matrix equation
-    A, B = np.linalg.solve(A_mat, b_vec)
-
-    return (A, B)
-
-
 # h1  per calcoli
 # Convective heat transfer coefficient for primary fluid
 Area = math.pi * (D_ves**2 - D_bar**2) / 4 - math.pi / 4 * (
@@ -393,16 +330,26 @@ Vol_q03_prime = Mu_steel * Intensity_0
 # Plot temperature profile
 x = np.linspace(0, Thickness_vessel, 100)  # Absolute radius
 
-T_plot = functions.Temperature_profile_prime(x, A, B, q03_prime)
+T_profile = functions.Temperature_profile_prime(x, A, B, q03_prime)
 
 plt.figure(figsize=(6, 5))
-plt.plot(x, T_plot, label="Temperature profile")
+plt.plot(x, T_profile, label="Temperature profile")
 plt.xlabel("x (m)")
 plt.ylabel("Temperature (K)")
 plt.title("Temperature profile inside vessel")
-plt.minorticks_on()
 plt.grid()
 plt.show()
+
+T_inner = T_profile[0]
+T_outer = T_profile[-1]
+idx_max_temperature = np.argmax(T_profile)
+pos_max_temperature = x[idx_max_temperature]
+T_max = np.max(T_profile)
+
+print(f"Inner vessel temperature: {T_inner - Kelvin:.5f} C")
+print(f"Outer vessel temperature: {T_outer - Kelvin:.5f} C")
+print(f"Maximum temperature: {T_max - Kelvin:.5f} C")
+print(f"Position of maximum temperature: {pos_max_temperature * 100:.5f} cm")
 
 # Point 7
 U_1c = 1 / (
@@ -411,8 +358,7 @@ U_1c = 1 / (
     + R_ves
     / Thermal_conductivity_ins
     * np.log(
-        (R_ves + Thickness_vessel + Thickness_insulation)
-        / (R_ves + Thickness_insulation)
+        (R_ves + Thickness_vessel + Thickness_insulation) / (R_ves + Thickness_vessel)
     )
     + R_ves / (R_ves + Thickness_vessel + Thickness_insulation) * 1 / h_2
 )
@@ -426,8 +372,7 @@ U_2c = 1 / (
     + (R_ves + Thickness_vessel)
     / Thermal_conductivity_ins
     * np.log(
-        (R_ves + Thickness_vessel + Thickness_insulation)
-        / (R_ves + Thickness_insulation)
+        (R_ves + Thickness_vessel + Thickness_insulation) / (R_ves + Thickness_vessel)
     )
     + (R_ves + Thickness_vessel)
     / (R_ves + Thickness_vessel + Thickness_insulation)
@@ -458,8 +403,23 @@ plt.plot(r, T_c, label="Temperature profile")
 plt.xlabel("x (m)")
 plt.ylabel("Temperature (K)")
 plt.title("Temperature profile inside RPV wall (cylinder)")
-plt.minorticks_on()
 plt.grid(True)
+plt.show()
+
+q_flux_in = U_1c * (T_1 - T_2)
+q_flux_out = q_flux_in * R_ves / (R_ves + Thickness_vessel)
+print(f"Inner thermal power: {q_flux_in / 1000:.5f} KW / m^2")
+print(f"Outer thermal power: {q_flux_out / 1000:.5f} KW / m^2")
+
+plt.figure(figsize=(6, 5))
+plt.plot(r, T_profile, label="Without gamma radiation")
+plt.plot(r, T_c, label="With gamma radiation")
+plt.xlabel("x (m)")
+plt.ylabel("Temperature (K)")
+plt.title("Comparison: Temperature Profile With vs Without Heat Source")
+plt.legend()
+plt.grid(True)
+plt.show()
 
 # Point 8
 # Mechanical stresses
