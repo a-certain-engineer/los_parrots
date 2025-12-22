@@ -32,7 +32,7 @@ Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
 Sigma_T_1 = 0.56  # From graph
 Sigma_T_2 = 0.08  # From graph
-a = 2.75  # m
+a = 2.75 / 2  # m
 
 # ASME III data for considered steel
 Temperature = np.array(
@@ -86,7 +86,7 @@ def Temperature_profile(x, A, B, q03):
 
 
 def integrand_function(rho, A, B, q03_prime):
-    x_local = rho - R_ves
+    x_local = rho - a
     return Temperature_profile_prime(x_local, A, B, q03_prime) * rho
 
 

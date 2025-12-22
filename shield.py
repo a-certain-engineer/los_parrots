@@ -35,7 +35,7 @@ Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
 Sigma_T_1 = 0.56  # From graph
 Sigma_T_2 = 0.08  # From graph
-a = 2.75  # m
+a = 2.75 / 2  # m
 
 # ASME III data for considered steel
 Temperature = np.array(
@@ -102,7 +102,7 @@ q03 = Energy_gamma * Phi_0 * Build_up * Mu_steel
 
 # From vessel
 idx = 12
-Thickness = 0.157468271335  # m
+Thickness_vessel = 0.157468271335  # m
 h_1 = 7498.1  # W / m^2 K
 Sigma_Lame = 93930646.91706014  # Pa
 
@@ -120,7 +120,7 @@ print(f"Thermal shield thickness: {Shield_thickness * 100:.5} cm")
 A = (
     np.exp(-Mu_steel * Shield_thickness)
     * ((q03 * h_1) / (Mu_steel**2 * Thermal_conductivity_steel) - q03 / Mu_steel)
-    - ((q03 * h_1) / (Mu_steel**2 * Thermal_conductivity_steel) - q03 / Mu_steel)
+    - ((q03 * h_1) / (Mu_steel**2 * Thermal_conductivity_steel) + q03 / Mu_steel)
 ) / (2 * Thermal_conductivity_steel + Shield_thickness * h_1)
 B = (
     T_fluid
@@ -159,7 +159,7 @@ plt.show()
 
 # Point 6
 # Mechanical stresses
-P_m = P_des * R_ves / Thickness + P_des / 2
+P_m = P_des * R_ves / Thickness_vessel + P_des / 2
 Stress_I = S_m[idx] * 1e6
 if P_m <= Stress_I:
     print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
@@ -195,7 +195,7 @@ for i in range(len(r)):
 
     # Variable integral from a to radius
     integral_ar, err = integrate.quad(
-        functions.integrand_function, a, radius, args=(A, B, q03_prime)
+        functions.integrand_function, a, radius, args=(A, B, q03)
     )
 
     # Temperature at current radius
