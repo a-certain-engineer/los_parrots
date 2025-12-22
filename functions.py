@@ -55,29 +55,6 @@ Temperature = np.array(
         425,
     ]
 )
-S_m = np.array(
-    [160, 155, 148, 144, 140, 136, 133, 130, 127, 124, 121, 118, 114, 110, 105, 98]
-)
-S_y = np.array(
-    [
-        240,
-        232.5,
-        222,
-        216,
-        210,
-        204,
-        199.5,
-        195,
-        190.5,
-        186,
-        181.5,
-        177,
-        171,
-        165,
-        157.5,
-        147,
-    ]
-)
 
 # contants
 g = 9.806  # m / s
@@ -87,6 +64,9 @@ eV = 1.6e-19  # J
 D_e = D_ves - D_bar  # m
 R_bar = D_bar / 2
 R_ves = D_ves / 2
+
+T_1 = T_1 + Kelvin
+T_2 = T_2 + Kelvin
 
 
 def Temperature_profile_prime(x, A, B, q03_prime):
@@ -107,7 +87,7 @@ def Temperature_profile(x, A, B, q03):
 
 def integrand_function(rho, A, B, q03_prime):
     x_local = rho - R_ves
-    return Temperature_profile(x_local, A, B, q03_prime) * rho
+    return Temperature_profile_prime(x_local, A, B, q03_prime) * rho
 
 
 def solve_coefficients(t, h_1, h_2, q03):
@@ -205,7 +185,13 @@ def solve_coefficients_prime(t, h_1, h_2, q03_prime):
 
 
 def find_index(T_des):
-    T_des = T_des - Kelvin
-    idx = np.where(Temperature - T_des > 0, Temperature - T_des, np.inf).argmin()
+    T_des_celsius = T_des - Kelvin
+
+    if T_des_celsius > Temperature[-1]:
+        return len(Temperature) - 1
+
+    idx = np.where(
+        Temperature >= T_des_celsius, Temperature - T_des_celsius, np.inf
+    ).argmin()
 
     return idx

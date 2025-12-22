@@ -146,10 +146,7 @@ print(f"Maximum shield temperature: {T_shield_max:.5} C")
 idx_max = np.argmax(T_shield)
 pos = x[idx_max]
 
-T_shield_avg_C = T_shield_avg - Kelvin
-idx_S_m = np.where(
-    Temperature >= T_shield_avg_C, Temperature - T_shield_avg_C, np.inf
-).argmin()
+idx_S_m = functions.find_index(T_shield_avg)
 
 
 plt.figure(figsize=(6, 5))

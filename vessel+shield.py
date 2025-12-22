@@ -2,6 +2,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
+import functions
 
 # variables
 P_des = 85  # bar
@@ -10,7 +11,7 @@ T_des = 214  # °C
 T_fluid = 214  # °C
 D_bar = 2.5  # m
 D_ves = 3.0  # m
-Thick_insulation = 0.05  # m
+Thickness_insulation = 0.05  # m
 Density = 852.50  # Kg/m3
 Flow_rate = 3227  # Kg / s
 Viscosity_I = 1.259e-4  # Pa s
@@ -133,11 +134,11 @@ def integrand_function(rho, A, B):
 
 def solve_coefficients(t, h_1, h_2):
     term1 = (
-        -(q03_prime * Thick_insulation)
+        -(q03_prime * Thickness_insulation)
         / (Mu_steel * Thermal_conductivity_ins)
         * np.exp(-Mu_steel * t)
     )
-    term2 = -(Thick_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
+    term2 = -(Thickness_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
         -Mu_steel * t
     )
     term3 = (q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
@@ -152,7 +153,7 @@ def solve_coefficients(t, h_1, h_2):
         t
         + Thermal_conductivity_steel / h_1
         + Thermal_conductivity_steel / h_2
-        + (Thermal_conductivity_steel * Thick_insulation) / Thermal_conductivity_ins
+        + (Thermal_conductivity_steel * Thickness_insulation) / Thermal_conductivity_ins
     )
     alpha1 = denominator
     beta1 = 0
@@ -197,40 +198,43 @@ h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 
 # Point 3
 # Guess thickness
-Thickness_tresca = (P_des * R_ves) / (S_m[4] * 1e6 - 0.5 * P_des)
+T_avg = (T_1 + T_2) / 2
+idx = functions.find_index(T_avg)
+Thickness_tresca = (P_des * R_ves) / (S_m[idx] * 1e6 - 0.5 * P_des)
 
 # Point 2 and 3
 # Iterative cycle to find the design teperature, thickness
-T_avg = (T_1 + T_2) / 2
-
 T_prev = T_avg
 toll = 10
-idx = 4
 
-print("Tresca thickness")
+print("Tresca")
 while toll >= 1:
     Thickness_tresca = (P_des * R_ves) / (S_m[idx] * 1e6 - 0.5 * P_des)
 
-    A_tresca, B_tresca = solve_coefficients(Thickness_tresca, h_1, h_2)
+    # Solve linear equation for A and B coefficients
+    A_tresca, B_tresca = functions.solve_coefficients_prime(
+        Thickness_tresca, h_1, h_2, q03_prime
+    )
 
-    # Calculate and print average pressure
+    # Calculate average temperature
     T_int, err = integrate.quad(
-        Temperature_profile, 0.0, Thickness_tresca, args=(A_tresca, B_tresca)
+        functions.Temperature_profile_prime,
+        0.0,
+        Thickness_tresca,
+        args=(A_tresca, B_tresca, q03_prime),
     )
     T_des = T_int / Thickness_tresca
-    print(f"Temperatura design: {T_des:.5} K")
 
-    # Calculate tollerance and update previous pressure
+    # Calculate tollerance and update previous temperature
     toll = np.absolute(T_prev - T_des)
     T_prev = T_des
-    T_des = T_des - Kelvin
 
-    # Get index for the closest pressure
-    idx = np.where(Temperature > T_des, Temperature - T_des, np.inf).argmin()
+    # Get index for the closest temperature
+    idx = functions.find_index(T_des)
 
     # Print results
     print(
-        f"Thickness: {Thickness_tresca * 100:.5} cm | Desgin temperature: {T_des:.5} C | Index: {idx} | Tollerance: {toll:.5} | Ultimate strength: {S_m[idx]} MPa"
+        f"Thickness: {Thickness_tresca * 100:.5} cm | Desgin temperature: {T_des - Kelvin:.5} C | Index: {idx} | Tollerance: {toll:.5}"
     )
 
 # Buckling
@@ -247,33 +251,35 @@ iteration = 0
 
 Thickness_min = (P_des_ext * R_ves) / (sigma_lim - 0.5 * P_des_ext)
 
-print("\nBuckling thickness")
+print("\nBuckling")
 while P_all < P_des_ext and iteration <= max_iter:
     Thickness_buckling = Thickness_min + iteration * increment
 
     # Solutions
-    A_buckling, B_buckling = solve_coefficients(Thickness_buckling, h_1, h_2)
+    A_buckling, B_buckling = functions.solve_coefficients_prime(
+        Thickness_buckling, h_1, h_2, q03_prime
+    )
 
-    # Print average pressure
-    if T_avg == T_prev:
-        print(f"Temperatura media: {T_avg} K")
-
-    # Calculate and print average pressure
+    # Calculate average temperature
     T_int, err = integrate.quad(
-        Temperature_profile, 0.0, Thickness_buckling, args=(A_buckling, B_buckling)
+        functions.Temperature_profile_prime,
+        0.0,
+        Thickness_buckling,
+        args=(A_buckling, B_buckling, q03_prime),
     )
     T_des = T_int / Thickness_buckling
-    # print(f"Temperatura design: {T_des:.5} K")
 
-    # Calculate tollerance and update previous pressure
+    # Calculate tollerance and update previous temperature
     toll = np.absolute(T_prev - T_des)
     T_prev = T_des
-    T_des = T_des - Kelvin
 
-    # Get index for the closest pressure
-    idx = np.where(Temperature > T_des, Temperature - T_des, np.inf).argmin()
+    # Get index for the closest temperature
+    idx = functions.find_index(T_des)
 
-    slender = D_ves / Thickness_buckling
+    # Calculate slenderness ratio
+    Slender = D_ves / Thickness_buckling
+
+    # Calculate vessel external diameter
     D_ext = D_ves + 2 * Thickness_buckling
 
     Z = math.sqrt(3) / 4 * (2 * D_ext / Thickness_buckling + 1) * W
@@ -309,14 +315,17 @@ while P_all < P_des_ext and iteration <= max_iter:
         mu = 0.35 * np.log(q_E / q_0) - 0.125
 
     q_C = mu * q_U + (1 - mu) * q_L
+
+    # Calculate allowable pressure
     P_all = q_C / S_corradi
 
     iteration += 1
 
 print(
-    f"Final thickness for buckling: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des:.5f} C"
+    f"Thickness: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des - Kelvin:.5f} C"
 )
 
+# Update variables considering the limiting criterion
 if Thickness_buckling > Thickness_tresca:
     Thickness_vessel = Thickness_buckling
     A, B = A_buckling, B_buckling
@@ -343,7 +352,7 @@ Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
 h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 
 # Convective heat transfer coefficient for secondary fluid
-D_ext = D_ves + 2 * Thickness_vessel + 2 * Thick_insulation
+D_ext = D_ves + 2 * Thickness_vessel + 2 * Thickness_insulation
 
 Pr_II = (Viscosity_II * Cp_II) / Thermal_conductivity_II
 Gr = (g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
@@ -357,15 +366,20 @@ h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
 U_1 = 1 / (
     (R_ves + Thickness_vessel)
     / Thermal_conductivity_ins
-    * np.log((R_ves + Thickness_vessel + Thick_insulation) / (R_ves + Thickness_vessel))
-    + (R_ves + Thickness_vessel) / ((R_ves + Thickness_vessel + Thick_insulation) * h_1)
+    * np.log(
+        (R_ves + Thickness_vessel + Thickness_insulation) / (R_ves + Thickness_vessel)
+    )
+    + (R_ves + Thickness_vessel)
+    / ((R_ves + Thickness_vessel + Thickness_insulation) * h_1)
 )
 
 # Global heat transfer coefficient insulator-cpp
 U_2 = 1 / (
-    (R_ves + Thickness_vessel + Thick_insulation)
+    (R_ves + Thickness_vessel + Thickness_insulation)
     / Thermal_conductivity_ins
-    * np.log((R_ves + Thickness_vessel + Thick_insulation) / (R_ves + Thickness_vessel))
+    * np.log(
+        (R_ves + Thickness_vessel + Thickness_insulation) / (R_ves + Thickness_vessel)
+    )
     + 1 / h_2
 )
 
@@ -379,7 +393,7 @@ Vol_q03_prime = Mu_steel * Intensity_0
 # Plot temperature profile
 x = np.linspace(0, Thickness_vessel, 100)  # Absolute radius
 
-T_plot = Temperature_profile(x, A, B)
+T_plot = functions.Temperature_profile_prime(x, A, B, q03_prime)
 
 plt.figure(figsize=(6, 5))
 plt.plot(x, T_plot, label="Temperature profile")
@@ -396,8 +410,11 @@ U_1c = 1 / (
     + R_ves / Thermal_conductivity_steel * np.log((R_ves + Thickness_vessel) / R_ves)
     + R_ves
     / Thermal_conductivity_ins
-    * np.log((R_ves + Thickness_vessel + Thick_insulation) / (R_ves + Thick_insulation))
-    + R_ves / (R_ves + Thickness_vessel + Thick_insulation) * 1 / h_2
+    * np.log(
+        (R_ves + Thickness_vessel + Thickness_insulation)
+        / (R_ves + Thickness_insulation)
+    )
+    + R_ves / (R_ves + Thickness_vessel + Thickness_insulation) * 1 / h_2
 )
 
 # global heat transfer coefficient insulator-cpp
@@ -408,9 +425,12 @@ U_2c = 1 / (
     * np.log((R_ves + Thickness_vessel) / R_ves)
     + (R_ves + Thickness_vessel)
     / Thermal_conductivity_ins
-    * np.log((R_ves + Thickness_vessel + Thick_insulation) / (R_ves + Thick_insulation))
+    * np.log(
+        (R_ves + Thickness_vessel + Thickness_insulation)
+        / (R_ves + Thickness_insulation)
+    )
     + (R_ves + Thickness_vessel)
-    / (R_ves + Thickness_vessel + Thick_insulation)
+    / (R_ves + Thickness_vessel + Thickness_insulation)
     * 1
     / h_2
 )
@@ -470,7 +490,10 @@ Sigma_z_M = 2 * Nu * R_ves**2 / ((R_ves + Thickness_vessel) ** 2 - R_ves**2) * P
 # Thermal stresses
 # Temperature profile integral from a to b
 integral_ab, err = integrate.quad(
-    integrand_function, R_ves, R_ves + Thickness_vessel, args=(A, B)
+    functions.integrand_function,
+    R_ves,
+    R_ves + Thickness_vessel,
+    args=(A, B, q03_prime),
 )
 
 # Initialize arrays
@@ -487,10 +510,12 @@ for i in range(len(r)):
     radius = r[i]
 
     # Variable integral from a to radius
-    integral_ar, err = integrate.quad(integrand_function, R_ves, radius, args=(A, B))
+    integral_ar, err = integrate.quad(
+        functions.integrand_function, R_ves, radius, args=(A, B, q03_prime)
+    )
 
     # Temperature at current radius
-    Temp_val = Temperature_profile(radius - R_ves, A, B)
+    Temp_val = functions.Temperature_profile_prime(radius - R_ves, A, B, q03_prime)
 
     # Radial stress formula
     term_1 = ((radius**2 - R_ves**2) / (geom_denom * radius**2)) * integral_ab
