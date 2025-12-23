@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
+import scipy.constants as constants
 import functions
 
 # variables
@@ -82,10 +83,6 @@ S_y = np.array(
     ]
 )
 
-# contants
-g = 9.806  # m / s
-eV = 1.6e-19  # J
-
 # geometry
 D_e = D_ves - D_bar  # m
 R_bar = D_bar / 2
@@ -96,13 +93,13 @@ P_des = P_des * 1e5  # Pa
 T_1 = T_1 + Kelvin
 T_2 = T_2 + Kelvin
 T_fluid = T_fluid + Kelvin
-Energy_gamma = Energy_gamma * eV
+Energy_gamma = Energy_gamma * constants.eV
 Phi_0 = Phi_0 * 1e4
 q03 = Energy_gamma * Phi_0 * Build_up * Mu_steel
 
 # From vessel
 idx = 12
-Thickness_vessel = 0.157468271335  # m
+Thickness_vessel = 0.1614688  # m
 h_1 = 7498.1  # W / m^2 K
 Sigma_Lame = 93930646.91706014  # Pa
 

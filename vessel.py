@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.integrate as integrate
 import functions
+import scipy.constants as constants
 
 # Variables
 P_des = 85  # bar
@@ -80,10 +81,6 @@ S_y = np.array(
     ]
 )
 
-# Contants
-g = 9.806  # m / s
-eV = 1.6e-19  # J
-
 # Geometry
 D_e = D_ves - D_bar  # m
 R_bar = D_bar / 2
@@ -93,7 +90,7 @@ R_ves = D_ves / 2
 T_1 = T_1 + Kelvin
 T_2 = T_2 + Kelvin
 Phi_0 = Phi_0 * 1e4
-Energy_gamma = Energy_gamma * eV
+Energy_gamma = Energy_gamma * constants.eV
 
 
 # Point 2
@@ -127,7 +124,7 @@ h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 D_ext = D_ves + 2 * Thickness_tresca + 2 * Thickness_insulation
 
 Pr_II = (Viscosity_II * Cp_II) / Thermal_conductivity_II
-Gr = (g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
+Gr = (constants.g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
 
 # Mc Adams correlation
 Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
