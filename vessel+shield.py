@@ -91,7 +91,7 @@ h_1 = 7498.1  # W / m^2 K
 h_2 = 1060.5  # W / m^2 K
 
 # From shield
-Thickness_shield = 0.036054  # m
+Thickness_shield = 0.21699  # m
 idx_S_m = 9
 q03_prime = 2855147.1704780236  # W / m^2
 

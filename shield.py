@@ -95,20 +95,22 @@ T_2 = T_2 + Kelvin
 T_fluid = T_fluid + Kelvin
 Energy_gamma = Energy_gamma * constants.eV
 Phi_0 = Phi_0 * 1e4
-q03 = Energy_gamma * Phi_0 * Build_up * Mu_steel
+q03 = Energy_gamma * Phi_0 * Mu_steel * Build_up
 
 # From vessel
 idx = 12
 Thickness_vessel = 0.1614688  # m
 h_1 = 7498.1  # W / m^2 K
-Sigma_Lame = 93930646.91706014  # Pa
+Sigma_Lame = 91929683.96264738  # Pa
 
 # Point 4
-q03_prime = (3 * S_m[idx] * 1e6 - Sigma_Lame) / (
-    (Sigma_T_1 * Alpha_T * E) / (Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2)
+q03_prime = (
+    (Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2)
+    / (Sigma_T_1 * Alpha_T * E)
+    * (3 * S_m[idx] * 1e6 - Sigma_Lame)
 )
 
-Shield_thickness = -1 / Mu_steel * np.log(q03_prime / (q03 * Build_up))
+Shield_thickness = -1 / Mu_steel * np.log(q03_prime / q03)
 
 print(f"Thermal shield thickness: {Shield_thickness * 100:.5} cm")
 
