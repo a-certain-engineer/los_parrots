@@ -8,7 +8,7 @@ mu = 24  # m⁻¹
 
 # Geometry
 R_internal = 1.5  # m
-t = 11e-2  # m (vessel thickness)
+t = 16.145e-2  # m (vessel thickness)
 R_external = R_internal + t
 
 Initial_flux_m2 = Initial_flux * 1e4  # photons/m²·s
