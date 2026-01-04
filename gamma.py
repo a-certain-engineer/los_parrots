@@ -24,7 +24,8 @@ def volumetric_heat_source(r, I0, mu, E_gamma):
     q'''(r) = μ * I(r) * E_gamma
     where I(r) = I0 * exp(-μ*(r - R_internal))
     """
-    I_r = I0 * np.exp(-mu * (r - R_internal))
+    B=np.linspace(1, 1.4,N_steps)
+    I_r = I0 *B* np.exp(-mu * (r - R_internal))
     q_vol = mu * I_r * E_gamma
     return q_vol
 
