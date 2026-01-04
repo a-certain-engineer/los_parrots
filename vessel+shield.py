@@ -91,12 +91,12 @@ h_1 = 7498.1  # W / m^2 K
 h_2 = 1060.5  # W / m^2 K
 
 # From shield
-Thickness_shield = 0.21699  # m
+Thickness_shield = 0.021699  # m
 idx_S_m = 9
 q03_prime = 2855147.1704780236  # W / m^2
 
 # geometry
-D_e = D_ves - (a + Thickness_shield)  # m
+D_e = D_ves - (a + 2 * Thickness_shield)  # m
 R_bar = D_bar / 2
 R_ves = D_ves / 2
 
@@ -115,7 +115,7 @@ q03 = Energy_gamma * Phi_0 * Build_up * Mu_steel
 # h1  per calcoli
 # Convective heat transfer coefficient for primary fluid
 Area = math.pi * (D_ves**2 - D_bar**2) / 4 - math.pi / 4 * (
-    (a + Thickness_shield) ** 2 - a**2
+    (a + 2 * Thickness_shield) ** 2 - a**2
 )
 Velocity = Flow_rate / (Density * Area)
 
@@ -253,6 +253,10 @@ while P_all < P_des_ext and iteration <= max_iter:
 
     iteration += 1
 
+    if iteration == 1000:
+        print("System does not converge after 1000 iterations.")
+
+
 print(
     f"Thickness: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des - Kelvin:.5f} C"
 )
@@ -266,6 +270,35 @@ else:
     Thickness_vessel = Thickness_tresca
     A, B = A_tresca, B_tresca
     print("Governing criterion: Tresca\n")
+
+# Point 2
+T_prev = T_avg
+toll = 10
+
+while toll >= 1:
+    # Solutions
+    A, B = functions.solve_coefficients_prime(Thickness_vessel, h_1, h_2, q03_prime)
+
+    # Calculate average temperature
+    T_int, err = integrate.quad(
+        functions.Temperature_profile_prime,
+        0.0,
+        Thickness_vessel,
+        args=(A, B, q03_prime),
+    )
+    T_des = T_int / Thickness_vessel
+
+    # Calculate tollerance and update previous temperature
+    toll = np.absolute(T_prev - T_des)
+    T_prev = T_des
+
+    # Get index for the closest temperature
+    idx = functions.find_index(T_des)
+
+    # Print results
+    print(
+        f"Design temperature: {T_des - Kelvin:.5} C | Indice: {idx} | Tolleranza: {toll:.5} | Ultimate: {S_m[idx]} MPa"
+    )
 
 
 # Point 4
@@ -317,14 +350,33 @@ U_2 = 1 / (
 
 
 # Point 5
+x = np.linspace(0, Thickness_vessel, 100)
+
 Intensity_0 = Phi_0 * Energy_gamma
-Intensity = Intensity_0 * np.exp(-Mu_steel * Thickness_vessel) * Build_up
-Vol_q03_prime = Mu_steel * Intensity_0
+Intensity = Intensity_0 * Build_up
+
+Vol_q3_prime_surface = Intensity_0 * Mu_steel
+Vol_q3_prime = Mu_steel * Intensity * np.exp(-Mu_steel * x)
+
+
+print(
+    f"Volumetric heat flux at the vessel inner surface: {Vol_q3_prime_surface / 1e6:.5f} MW / m^3"
+)
+print(
+    f"Volumetric heat flux at the vessel outer surface: {Vol_q3_prime[-1] / 1e6:.5f} MW / m^3"
+)
+
+plt.figure(figsize=(6, 5))
+plt.plot(x, Vol_q3_prime / 1e6)
+plt.xlabel("r (m)")
+plt.ylabel("Volumetric heat (MW / m^3)")
+plt.title("Volumetric heat radial profile across vessel's thickness")
+plt.grid()
+plt.tight_layout()
+plt.show()
 
 # Point 6
 # Plot temperature profile
-x = np.linspace(0, Thickness_vessel, 100)  # Absolute radius
-
 T_profile = functions.Temperature_profile_prime(x, A, B, q03_prime)
 
 plt.figure(figsize=(6, 5))

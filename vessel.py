@@ -192,7 +192,7 @@ while toll >= 1:
 
     # Print results
     print(
-        f"Thickness: {Thickness_tresca * 100:.5} cm | Desgin temperature: {T_des - Kelvin:.5} C | Index: {idx_tresca} | Tollerance: {toll:.5}"
+        f"Thickness: {Thickness_tresca * 100:.5} cm | Design temperature: {T_des - Kelvin:.5} C | Index: {idx_tresca} | Tollerance: {toll:.5}"
     )
 
 
@@ -278,8 +278,11 @@ while P_all < P_des_ext and iteration <= max_iter:
 
     iteration += 1
 
+    if iteration == 1000:
+        print("System does not converge after 1000 iterations.")
+
 print(
-    f"Final thickness for buckling: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des - Kelvin:.5f} C"
+    f"Final thickness for buckling: {Thickness_buckling * 100:.5} cm | Iteration count: {iteration} | Design temperature: {T_des - Kelvin:.5} C"
 )
 
 if Thickness_buckling >= Thickness_tresca:
@@ -339,14 +342,26 @@ print(f"U2 insulator-cpp= {U_2:.5} W / K")
 
 # Point 5
 x = np.linspace(0, Thickness_vessel, 100)
-Vol_q3 = Vol_q03 * np.exp(-Mu_steel * x) * Build_up
+
+Build_up = np.linspace(1, Build_up, 100)
+Intensity = Intensity_0 * Build_up
+
+Vol_q3 = Mu_steel * Intensity * np.exp(-Mu_steel * x)
+
+print(
+    f"Volumetric heat flux at the vessel inner surface: {Vol_q3[0] / 1e6:.5} MW / m^3"
+)
+print(
+    f"Volumetric heat flux at the vessel outer surface: {Vol_q3[-1] / 1e6:.5} MW / m^3"
+)
 
 plt.figure(figsize=(6, 5))
-plt.plot(x, Vol_q3 * 1e-6, label="Volumetric heat source radial profile")
-plt.xlabel("x (m)")
-plt.ylabel("Volumetric heat source (MW / m^3)")
-plt.title("Radial profile of volumetric heat source")
-plt.grid(True)
+plt.plot(x, Vol_q3 / 1e6)
+plt.xlabel("r (m)")
+plt.ylabel("Volumetric heat (MW / m^3)")
+plt.title("Volumetric heat radial profile across vessel's thickness")
+plt.grid()
+plt.tight_layout()
 plt.show()
 
 # Point 6
@@ -355,7 +370,7 @@ T_profile = functions.Temperature_profile(x, A, B, q03)
 
 plt.figure(figsize=(6, 5))
 plt.plot(x, T_profile, label="Temperature profile")
-plt.xlabel("x (m)")
+plt.xlabel("r (m)")
 plt.ylabel("Temperature (K)")
 plt.title("Temperature profile inside vessel")
 plt.minorticks_on()
@@ -368,10 +383,10 @@ idx_max_temperature = np.argmax(T_profile)
 pos_max_temperature = x[idx_max_temperature]
 T_max = np.max(T_profile)
 
-print(f"Inner vessel temperature: {T_inner - Kelvin:.5f} C")
-print(f"Outer vessel temperature: {T_outer - Kelvin:.5f} C")
-print(f"Maximum temperature: {T_max - Kelvin:.5f} C")
-print(f"Position of maximum temperature: {pos_max_temperature * 100:.5f} cm")
+print(f"Inner vessel temperature: {T_inner - Kelvin:.5} C")
+print(f"Outer vessel temperature: {T_outer - Kelvin:.5} C")
+print(f"Maximum temperature: {T_max - Kelvin:.5} C")
+print(f"Position of maximum temperature: {pos_max_temperature * 100:.5} cm")
 
 # Point 7 (slab)
 # Calculate heating
@@ -431,7 +446,7 @@ T_c = A_c * np.log(r) + B_c
 
 plt.figure(figsize=(6, 5))
 plt.plot(r, T_c, label="Temperature profile")
-plt.xlabel("x (m)")
+plt.xlabel("r (m)")
 plt.ylabel("Temperature (K)")
 plt.title("Temperature profile inside RPV wall (cylinder)")
 plt.minorticks_on()
@@ -440,13 +455,13 @@ plt.show()
 
 q_flux_in = U_1c * (T_1 - T_2)
 q_flux_out = q_flux_in * R_ves / (R_ves + Thickness_vessel)
-print(f"Inner thermal power: {q_flux_in / 1000:.5f} KW / m^2")
-print(f"Outer thermal power: {q_flux_out / 1000:.5f} KW / m^2")
+print(f"Inner thermal power: {q_flux_in / 1000:.5} KW / m^2")
+print(f"Outer thermal power: {q_flux_out / 1000:.5} KW / m^2")
 
 plt.figure(figsize=(6, 5))
 plt.plot(r, T_profile, label="Without gamma radiation")
 plt.plot(r, T_c, label="With gamma radiation")
-plt.xlabel("x (m)")
+plt.xlabel("r (m)")
 plt.ylabel("Temperature (K)")
 plt.title("Comparison: Temperature Profile With vs Without Heat Source")
 plt.legend()
