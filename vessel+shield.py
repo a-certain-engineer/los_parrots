@@ -352,15 +352,10 @@ U_2 = 1 / (
 # Point 5
 x = np.linspace(0, Thickness_vessel, 100)
 
-Intensity_0 = Phi_0 * Energy_gamma
-Intensity = Intensity_0 * Build_up
-
-Vol_q3_prime_surface = Intensity_0 * Mu_steel
-Vol_q3_prime = Mu_steel * Intensity * np.exp(-Mu_steel * x)
-
+Vol_q3_prime = q03_prime * np.exp(-Mu_steel * x)
 
 print(
-    f"Volumetric heat flux at the vessel inner surface: {Vol_q3_prime_surface / 1e6:.5f} MW / m^3"
+    f"Volumetric heat flux at the vessel inner surface: {Vol_q3_prime[0] / 1e6:.5f} MW / m^3"
 )
 print(
     f"Volumetric heat flux at the vessel outer surface: {Vol_q3_prime[-1] / 1e6:.5f} MW / m^3"

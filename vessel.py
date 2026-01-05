@@ -152,10 +152,6 @@ U_2 = 1 / (
     + 1 / h_2
 )
 
-# Point 5
-Intensity_0 = Phi_0 * Energy_gamma
-Intensity = Intensity_0 * np.exp(-Mu_steel * Thickness_tresca) * Build_up
-Vol_q03 = Mu_steel * Intensity_0
 
 # Point 6
 q03 = Phi_0 * Energy_gamma * Mu_steel * Build_up
@@ -344,7 +340,7 @@ print(f"U2 insulator-cpp= {U_2:.5} W / K")
 x = np.linspace(0, Thickness_vessel, 100)
 
 Build_up = np.linspace(1, Build_up, 100)
-Intensity = Intensity_0 * Build_up
+Intensity = Phi_0 * Energy_gamma * Build_up
 
 Vol_q3 = Mu_steel * Intensity * np.exp(-Mu_steel * x)
 
@@ -472,6 +468,13 @@ plt.show()
 # Point 8
 # Mechanical stresses
 P_m = P_des * R_ves / Thickness_vessel + P_des / 2
+Stress_I = S_m[idx] * 1e6
+
+if P_m <= Stress_I:
+    print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
+else:
+    print(f"Not good, {P_m:.5} is more than {Stress_I:.5}")
+
 Sigma_r = (
     -(R_ves**2)
     / ((R_ves + Thickness_vessel) ** 2 - R_ves**2)
@@ -486,15 +489,8 @@ Sigma_theta = (
 )
 
 Sigma_Lame = np.max(Sigma_theta - Sigma_r)
-idx_max = np.argmax(Sigma_theta - Sigma_r)
-pos = r[idx_max]
-
-Stress_I = S_m[idx] * 1e6
-
-if P_m <= Stress_I:
-    print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
-else:
-    print(f"Not good, {P_m:.5} is more than {Stress_I:.5}")
+# idx_max = np.argmax(Sigma_theta - Sigma_r)
+# pos = r[idx_max]
 
 # Thermal stresses
 Q = (Sigma_T * Alpha_T * E * q03) / (
@@ -503,7 +499,7 @@ Q = (Sigma_T * Alpha_T * E * q03) / (
 
 # Mechanical and thermal stresses
 test = Q + Sigma_Lame
-test_y = 2 * S_y[idx] * 1e6
+test_y = 3 * S_m[idx] * 1e6
 if test < test_y:
     print(f"Good, {test:.5} is less than {test_y:.5}")
 else:
