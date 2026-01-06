@@ -35,7 +35,6 @@ E = 177.0e9  # Pa
 Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
 Sigma_T_1 = 0.56  # From graph
-Sigma_T_2 = 0.08  # From graph
 a = 2.75 / 2  # m
 
 # ASME III data for considered steel
@@ -138,22 +137,30 @@ T_shield = (
 T_shield_avg = np.average(T_shield)
 T_shield_max = np.max(T_shield)
 T_shield_min = np.min(T_shield)
-print(f"Design temperature: {T_shield_avg - Kelvin:.5} C")
-print(f"Minimum shield temperature: {T_shield_min:.5} C")
-print(f"Maximum shield temperature: {T_shield_max:.5} C")
 
 idx_max = np.argmax(T_shield)
 pos = x[idx_max]
 
 idx_S_m = functions.find_index(T_shield_avg)
 
+print(f"Inner surface shield temperature: {T_shield[0] - Kelvin:.4f} C")
+print(f"Outer surface shield temperature: {T_shield[-1] - Kelvin:.4f} C")
+print(f"Maximum shield temperature: {T_shield_max - Kelvin:.4f} C")
+print(f"Position of maximum temperature in the shield: {pos * 1e2:.4f} cm")
 
-plt.figure(figsize=(6, 5))
-plt.plot(x, T_shield, label="Temperature profile in the thermal shield")
-plt.xlabel("x (m)")
-plt.ylabel("Temperature (K)")
+plt.figure(figsize=(10, 6))
+plt.plot(
+    x + a,
+    T_shield,
+    "b-",
+    linewidth=2,
+    label="Temperature profile in the thermal shield",
+)
+plt.xlabel("Radial position [m]")
+plt.ylabel("Temperature [K]")
 plt.title("Temperature profile in the thermal shield")
-plt.grid()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
 plt.show()
 
 # Point 6
@@ -164,11 +171,6 @@ if P_m <= Stress_I:
     print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
 else:
     print(f"Not good, {P_m:.5} is more than {Stress_I:.5}")
-
-# Thermal stresses
-Q = (Sigma_T_2 * Alpha_T * E * q03) / (
-    Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2
-)
 
 # Point 3
 # Outer shield radius
@@ -182,7 +184,7 @@ integral_ab, err = integrate.quad(functions.integrand_function, a, b, args=(A, B
 # Initialize arrays
 Sigma_r = np.zeros(len(r))
 Sigma_theta = np.zeros(len(r))
-Sigma_Lame = np.zeros(len(r))
+Sigma_thermal = np.zeros(len(r))
 
 # Constant factors
 geom_denom = b**2 - a**2
@@ -212,17 +214,17 @@ for i in range(len(r)):
     Sigma_theta[i] = const_factor * (term_3 + term_4 - term_5)
 
     # Lame Stress
-    Sigma_Lame[i] = abs(Sigma_theta[i] - Sigma_r[i])
+    Sigma_thermal[i] = abs(Sigma_theta[i] - Sigma_r[i])
 
 # Maximum Lamé stress and stress intensity
-Sigma_Lame_max = np.max(Sigma_Lame)
+Sigma_thermal_max = np.max(Sigma_thermal)
 Limit_Stress = 3 * S_m[idx_S_m] * 1e6
 
-if Sigma_Lame_max <= Limit_Stress:
+if Sigma_thermal_max <= Limit_Stress:
     print(
-        f"Good: Thermal stress ({Sigma_Lame_max:.5}) is within limits ({Limit_Stress:.5})"
+        f"Good: Thermal stress ({Sigma_thermal_max:.5}) is within limits ({Limit_Stress:.5})"
     )
 else:
     print(
-        f"Bad: Thermal stress ({Sigma_Lame_max:.5}) is not within limits ({Limit_Stress:.5})"
+        f"Bad: Thermal stress ({Sigma_thermal_max:.5}) is not within limits ({Limit_Stress:.5})"
     )
