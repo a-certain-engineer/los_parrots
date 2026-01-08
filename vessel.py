@@ -5,8 +5,10 @@ import scipy.integrate as integrate
 import functions
 import scipy.constants as constants
 
+plt.rc("font", size=13)  # Increase size of axis numbers and titles
+
 # Variables
-P_des = 85  # bar
+P_des = 82.5  # bar
 D_bar = 2.5  # m
 D_ves = 3.0  # m
 Thickness_insulation = 0.05  # m
@@ -234,23 +236,27 @@ while P_all < P_des_ext and iteration <= max_iter:
     idx_buckling = functions.find_index(T_des_buckling)
 
     slender = D_ves / Thickness_buckling
-    D_ext = D_ves + 2 * Thickness_buckling
+    D_ext_buckling = D_ves + 2 * Thickness_buckling
 
-    Z = math.sqrt(3) / 4 * (2 * D_ext / Thickness_buckling + 1) * W
+    Z = math.sqrt(3) / 4 * (2 * D_ext_buckling / Thickness_buckling + 1) * W
 
     q_E = (
         (2 * E)
         / (1 - Nu**2)
         * 1
-        / (D_ext / Thickness_buckling * (D_ext / Thickness_buckling - 1) ** 2)
+        / (
+            D_ext_buckling
+            / Thickness_buckling
+            * (D_ext_buckling / Thickness_buckling - 1) ** 2
+        )
     )
     q_0 = (
         2
         * S_y[idx_buckling]
         * 1e6
         * Thickness_buckling
-        / D_ext
-        * (1 + 0.5 * Thickness_buckling / D_ext)
+        / D_ext_buckling
+        * (1 + 0.5 * Thickness_buckling / D_ext_buckling)
     )
 
     q_U = q_0 / math.sqrt(1 + Z**2)
@@ -331,7 +337,7 @@ print(
 plt.figure(figsize=(10, 6))
 plt.plot(x + R_ves, Vol_q3 / 1e6, "b-", linewidth=2)
 plt.xlabel("Radial position [m]")
-plt.ylabel("Volumetric heat [MW/m³]")
+plt.ylabel("Volumetric heat source [MW/m³]")
 plt.title("Volumetric heat radial profile across vessel's thickness")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
@@ -439,7 +445,7 @@ plt.plot(r, T_c, "r-", linewidth=2, label="Without gamma radiation")
 plt.xlabel("Radial position [m]")
 plt.ylabel("Temperature [K]")
 plt.title("Comparison: Temperature Profile With vs Without Heat Source")
-plt.legend()
+plt.legend(fontsize=15)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()

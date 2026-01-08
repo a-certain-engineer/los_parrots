@@ -4,6 +4,8 @@ import scipy.integrate as integrate
 import scipy.constants as constants
 import functions
 
+plt.rc("font", size=13)  # Increase size of axis numbers and titles
+
 # variables
 P_des = 85  # bar
 T_des = 214  # °C

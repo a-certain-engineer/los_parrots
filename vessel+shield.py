@@ -5,6 +5,8 @@ import scipy.integrate as integrate
 import functions
 import scipy.constants as constants
 
+plt.rc("font", size=13)  # Increase size of axis numbers and titles
+
 # variables
 P_des = 85  # bar
 P_des_ext = 75  # bar
@@ -302,6 +304,12 @@ Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 
 h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
 
+# Convective heat transfer coefficient for primary fluid
+print(f"\nConvective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
+
+# Convective heat transfer coefficient for secondary fluid
+print(f"Convective heat transfer coefficient 2= {h_2:.5} W / m^2 K")
+
 # Global heat transfer coefficient vessel-thermal insulation
 U_1 = 1 / (
     (R_ves + Thickness_vessel)
@@ -435,7 +443,7 @@ plt.plot(r, T_c, "r-", linewidth=2, label="Without gamma radiation")
 plt.xlabel("Radial position [m]")
 plt.ylabel("Temperature [K]")
 plt.title("Temperature profile with vs without heat source")
-plt.legend()
+plt.legend(fontsize=13)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
@@ -484,7 +492,7 @@ Sigma_z_T = np.zeros(len(r))
 geom_denom = (R_ves + Thickness_vessel) ** 2 - R_ves**2
 const_factor = (Alpha_T * E) / (1 - Nu)
 
-
+# Calculation
 for i in range(len(r)):
     radius = r[i]
 
@@ -516,39 +524,6 @@ for i in range(len(r)):
 S_I = Sigma_r_M + Sigma_r_T
 S_II = Sigma_theta_M + Sigma_theta_T
 S_III = Sigma_z_M + Sigma_z_T
-
-plt.figure(figsize=(10, 6))
-plt.plot(r, Sigma_r_M / 1e6, "b-", label="radial stress", linewidth=2)
-plt.plot(r, Sigma_theta_M / 1e6, "g-", label="hoop stress", linewidth=2)
-plt.plot(r, np.full(len(r), Sigma_z_M) / 1e6, "r-", label="axial stress", linewidth=2)
-plt.xlabel("Radial position [m]")
-plt.ylabel("Mechanical stresses [MPa]")
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
-
-plt.figure(figsize=(10, 6))
-plt.plot(r, Sigma_r_T / 1e6, "b-", label="radial stress", linewidth=2)
-plt.plot(r, Sigma_theta_T / 1e6, "g-", label="hoop stress", linewidth=2)
-plt.plot(r, np.full(len(r), Sigma_z_T) / 1e6, "r-", label="axial stress", linewidth=2)
-plt.xlabel("Radial position [m]")
-plt.ylabel("Thermal stresses [MPa]")
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
-
-plt.figure(figsize=(10, 6))
-plt.plot(r, S_I / 1e6, "b-", label="radial stress", linewidth=2)
-plt.plot(r, S_II / 1e6, "g-", label="hoop stress", linewidth=2)
-plt.plot(r, np.full(len(r), S_III) / 1e6, "r-", label="axial stress", linewidth=2)
-plt.xlabel("Radial position [m]")
-plt.ylabel("Total stresses [MPa]")
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
 
 diff_1 = np.abs(S_I - S_II)
 diff_2 = np.abs(S_II - S_III)
