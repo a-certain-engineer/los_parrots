@@ -1,13 +1,13 @@
-import matplotlib.pyplot as plt
+import functions
 import numpy as np
+import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 import scipy.constants as constants
-import functions
 
 plt.rc("font", size=13)  # Increase size of axis numbers and titles
 
 # variables
-P_des = 85  # bar
+P_des = 82.5  # bar
 T_des = 214  # °C
 T_fluid = 214  # °C
 D_bar = 2.5  # m

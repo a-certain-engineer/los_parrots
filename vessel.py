@@ -1,8 +1,8 @@
 import math
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy.integrate as integrate
 import functions
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.integrate as integrate
 import scipy.constants as constants
 
 plt.rc("font", size=13)  # Increase size of axis numbers and titles
@@ -195,24 +195,32 @@ while toll >= 1:
 
 
 # Buckling
+print("\nBuckling")
+
+# Ovality
 D_1 = (D_ves + 1.25) / 200
 D_2 = D_ves / 100
 Delta_D_max = min(D_1, D_2)
 W = Delta_D_max / D_ves
-t_cr = D_ves / (math.sqrt(E / (S_y[4] * 1e6 * (1 - Nu**2))))
-sigma_lim = 2 / 3 * S_y[4] * 1e6
 
+# Ovality check
+if W < 0.025:
+    print(f"Ovality check respected: W ({W:.4}) is less than 2.5%")
+else:
+    print(f"Ovality check not respected: W ({W:.4}) is more than 2.5%")
+
+# Parameters for the loop
 max_iter = 1000
 increment = 1e-4
 P_all = 0
 iteration = 0
 T_prev_buckling = T_avg
 
-Thickness_min = (P_des_ext * R_ves) / (sigma_lim - 0.5 * P_des_ext)
+# Minimum guess thickness
+Thickness_buckling = Thickness_tresca
 
-print("\nBuckling thickness")
 while P_all < P_des_ext and iteration <= max_iter:
-    Thickness_buckling = Thickness_min + iteration * increment
+    Thickness_buckling += increment
 
     # Solutions
     A_buckling, B_buckling = functions.solve_coefficients(
@@ -235,6 +243,7 @@ while P_all < P_des_ext and iteration <= max_iter:
     # Get index for the closest temperature
     idx_buckling = functions.find_index(T_des_buckling)
 
+    # Geometric parameters
     slender = D_ves / Thickness_buckling
     D_ext_buckling = D_ves + 2 * Thickness_buckling
 
@@ -285,9 +294,18 @@ while P_all < P_des_ext and iteration <= max_iter:
         print("System does not converge after 1000 iterations.")
 
 print(
-    f"Final thickness for buckling: {Thickness_buckling * 100:.5} cm | Iteration count: {iteration} | Design temperature: {T_des_buckling - Kelvin:.5} C"
+    f"Thickness: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des_buckling - Kelvin:.5f} C |"
 )
 
+# Critical thickness
+t_critical = D_ves / (math.sqrt(E / (S_y[idx_buckling] * 1e6 * (1 - Nu**2))))
+
+if Thickness_buckling < t_critical:
+    print("Elastic buckling regime")
+else:
+    print("Plastic collapse regime")
+
+# Update variables considering the limiting criterion
 if Thickness_buckling >= Thickness_tresca:
     Thickness_vessel = Thickness_buckling
     A, B = A_buckling, B_buckling

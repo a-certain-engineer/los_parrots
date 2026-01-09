@@ -1,14 +1,14 @@
 import math
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy.integrate as integrate
 import functions
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.integrate as integrate
 import scipy.constants as constants
 
 plt.rc("font", size=13)  # Increase size of axis numbers and titles
 
 # variables
-P_des = 85  # bar
+P_des = 82.5  # bar
 P_des_ext = 75  # bar
 T_des = 214  # °C
 T_fluid = 214  # °C
@@ -172,23 +172,33 @@ while toll >= 1:
     )
 
 # Buckling
+print("\nBuckling")
+
+# Ovality
 D_1 = (D_ves + 1.25) / 200
 D_2 = D_ves / 100
 Delta_D_max = min(D_1, D_2)
 W = Delta_D_max / D_ves
-t_cr = D_ves / (math.sqrt(E / (S_y[idx] * 1e6 * (1 - Nu**2))))
-sigma_lim = 2 / 3 * S_y[idx] * 1e6
+
+# Ovality check
+if W < 0.025:
+    print(f"Ovality check respected: W ({W:.4}) is less than 2.5%")
+else:
+    print(f"Ovality check not respected: W ({W:.4}) is more than 2.5%")
+
+# Parameters for the loop
 max_iter = 1000
 increment = 1e-4
 P_all = 0
 iteration = 0
 T_prev_buckling = T_avg
 
-Thickness_min = (P_des_ext * R_ves) / (sigma_lim - 0.5 * P_des_ext)
+# Minimum guess thickness
+Thickness_buckling = Thickness_tresca
 
-print("\nBuckling")
 while P_all < P_des_ext and iteration <= max_iter:
-    Thickness_buckling = Thickness_min + iteration * increment
+    # Guess thickness
+    Thickness_buckling += increment
 
     # Solutions
     A_buckling, B_buckling = functions.solve_coefficients_prime(
@@ -211,10 +221,8 @@ while P_all < P_des_ext and iteration <= max_iter:
     # Get index for the closest temperature
     idx_buckling = functions.find_index(T_des)
 
-    # Calculate slenderness ratio
+    # Geometric parameters
     Slender = D_ves / Thickness_buckling
-
-    # Calculate vessel external diameter
     D_ext = D_ves + 2 * Thickness_buckling
 
     Z = math.sqrt(3) / 4 * (2 * D_ext / Thickness_buckling + 1) * W
@@ -259,10 +267,17 @@ while P_all < P_des_ext and iteration <= max_iter:
     if iteration == 1000:
         print("System does not converge after 1000 iterations.")
 
-
 print(
-    f"Thickness: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des_buckling - Kelvin:.5f} C"
+    f"Thickness: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des_buckling - Kelvin:.5f} C |"
 )
+
+# Critical thickness
+t_critical = D_ves / (math.sqrt(E / (S_y[idx_buckling] * 1e6 * (1 - Nu**2))))
+
+if Thickness_buckling < t_critical:
+    print("Elastic buckling regime")
+else:
+    print("Plastic collapse regime")
 
 # Update variables considering the limiting criterion
 if Thickness_buckling > Thickness_tresca:
@@ -270,19 +285,21 @@ if Thickness_buckling > Thickness_tresca:
     A, B = A_buckling, B_buckling
     T_des = T_des_buckling
     idx = idx_buckling
-    print("Governing criterion: Buckling\n")
+    print("Governing criterion: Buckling")
 else:
     Thickness_vessel = Thickness_tresca
     A, B = A_tresca, B_tresca
     T_des = T_des_buckling
     idx = idx_tresca
-    print("Governing criterion: Tresca\n")
+    print("Governing criterion: Tresca")
 
 # Point 4
-# Convective heat transfer coefficient for primary fluid
+# Area of the two cirular crowns
 Area = math.pi * (D_ves**2 - D_bar**2) / 4 - math.pi / 4 * (
     (a + Thickness_shield) ** 2 - a**2
 )
+
+# Fluid velocity
 Velocity = Flow_rate / (Density * Area)
 
 Re = (Density * Velocity * D_e) / Viscosity_I
@@ -291,9 +308,10 @@ Pr_I = (Viscosity_I * Cp_I) / Thermal_conductivity_I
 # Dittus-Boelter correlation
 Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
 
+# Convective heat transfer coefficient for primary fluid
 h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 
-# Convective heat transfer coefficient for secondary fluid
+# External length
 D_ext = D_ves + 2 * Thickness_vessel + 2 * Thickness_insulation
 
 Pr_II = (Viscosity_II * Cp_II) / Thermal_conductivity_II
@@ -302,6 +320,7 @@ Gr = (constants.g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
 # Mc Adams correlation
 Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 
+# Convective heat transfer coefficient for secondary fluid
 h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
 
 # Convective heat transfer coefficient for primary fluid
@@ -521,10 +540,12 @@ for i in range(len(r)):
 
     Sigma_z_T[i] = Sigma_r_T[i] + Sigma_theta_T[i]
 
+# Principal stresses
 S_I = Sigma_r_M + Sigma_r_T
 S_II = Sigma_theta_M + Sigma_theta_T
 S_III = Sigma_z_M + Sigma_z_T
 
+# Tresca criterion
 diff_1 = np.abs(S_I - S_II)
 diff_2 = np.abs(S_II - S_III)
 diff_3 = np.abs(S_III - S_I)
