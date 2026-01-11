@@ -396,6 +396,7 @@ print(f"Maximum temperature: {T_max - Kelvin:.5f} C")
 print(f"Position of maximum temperature: {pos_max_temperature * 100:.5f} cm")
 
 # Point 7
+# global heat transfer coefficient ???
 U_1c = 1 / (
     1 / h_1
     + R_ves / Thermal_conductivity_steel * np.log((R_ves + Thickness_vessel) / R_ves)
@@ -443,29 +444,20 @@ r = np.linspace(R_ves, R_ves + Thickness_vessel, 100)
 T_c = A_c * np.log(r) + B_c
 
 plt.figure(figsize=(10, 6))
-plt.plot(r, T_c, "b-", linewidth=2, label="Temperature profile")
+plt.plot(r, T_profile, "b-", linewidth=2, label="With gamma radiation")
+plt.plot(r, T_c, "r-", linewidth=2, label="Without gamma radiation")
 plt.xlabel("Radial position [m]")
 plt.ylabel("Temperature [K]")
 plt.title("Temperature profile inside vessel's wall")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
+plt.legend()
 plt.show()
 
 q_flux_in = U_1c * (T_1 - T_2)
 q_flux_out = q_flux_in * R_ves / (R_ves + Thickness_vessel)
 print(f"Inner thermal power: {q_flux_in / 1000:.5f} KW / m^2")
 print(f"Outer thermal power: {q_flux_out / 1000:.5f} KW / m^2")
-
-plt.figure(figsize=(10, 6))
-plt.plot(r, T_profile, "b-", linewidth=2, label="With gamma radiation")
-plt.plot(r, T_c, "r-", linewidth=2, label="Without gamma radiation")
-plt.xlabel("Radial position [m]")
-plt.ylabel("Temperature [K]")
-plt.title("Temperature profile with vs without heat source")
-plt.legend(fontsize=13)
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
 
 # Point 8
 # Mechanical stresses
