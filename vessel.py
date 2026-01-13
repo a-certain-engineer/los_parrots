@@ -130,16 +130,16 @@ Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
 h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 
 # External length
-D_ext = D_ves + 2 * Thickness_tresca + 2 * Thickness_insulation
+L_ext = D_ves + 2 * Thickness_tresca + 2 * Thickness_insulation
 
 Pr_II = (Viscosity_II * Cp_II) / Thermal_conductivity_II
-Gr = (constants.g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
+Gr = (constants.g * Alpha_p * Delta_T * Density**2 * L_ext**3) / Viscosity_II**2
 
 # Mc Adams correlation
 Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 
 # Convective heat transfer coefficient for the secondary fluid
-h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
+h_2 = (Nu_II * Thermal_conductivity_II) / L_ext
 
 # Global heat transfer coefficient between the vessel and the thermal insulation
 U_1 = 1 / (
@@ -168,7 +168,7 @@ q03 = Phi_0 * Energy_gamma * Mu_steel * Build_up
 
 # Point 2 and 3 - Actual design temperature and vessel thickness
 # Tresca thickness
-print("\nTresca thickness")
+print("Tresca thickness")
 
 # Parameters for the iterative cycle
 T_avg = (T_1 + T_2) / 2
@@ -205,7 +205,7 @@ print(
 )
 
 # Buckling thickness
-print("\nBuckling")
+print("\nBuckling thickness")
 
 # Ovality calculation
 D_1 = (D_ves + 1.25) / 200
@@ -215,9 +215,9 @@ W = Delta_D_max / D_ves
 
 # Ovality check
 if W < 0.025:
-    print(f"Ovality check respected: W ({W:.4}) is less than 2.5%")
+    print(f"Ovality check respected: W ({W:.2f} %) is less than 2.5%")
 else:
-    print(f"Ovality check not respected: W ({W:.4}) is more than 2.5%")
+    print(f"Ovality check not respected: W ({W:.2f} %) is more than 2.5%")
 
 # Parameters for the iterative cycle
 max_iter = 10000

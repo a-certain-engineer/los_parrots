@@ -114,7 +114,7 @@ q03_prime = (
 
 Shield_thickness = -1 / Mu_steel * np.log(q03_prime / q03)
 
-print(f"Thermal shield thickness: {Shield_thickness * 100:.3} cm")
+print(f"Thermal shield thickness: {Shield_thickness * 100:.2f} cm")
 
 # Point 5 - Radial temperature profile
 # Constants from boundary condition
@@ -162,19 +162,19 @@ T_shield_min = np.min(T_shield)
 idx_max = np.argmax(T_shield)
 pos = x[idx_max]
 
-print(f"Inner surface shield temperature: {T_shield[0] - Kelvin:.4f} C")
-print(f"Outer surface shield temperature: {T_shield[-1] - Kelvin:.4f} C")
-print(f"Maximum shield temperature: {T_shield_max - Kelvin:.4f} C")
-print(f"Position of maximum temperature in the shield: {pos * 1e2:.4f} cm")
+print(f"Inner surface shield temperature: {T_shield[0] - Kelvin:.0f} C")
+print(f"Outer surface shield temperature: {T_shield[-1] - Kelvin:.0f} C")
+print(f"Maximum shield temperature: {T_shield_max - Kelvin:.0f} C")
+print(f"Position of maximum temperature in the shield: {pos * 1e2:.2f} cm")
 
 # Point 6 - Thermal stresses evaluation
 # Mechanical stresses
 P_m = P_des * R_ves / Thickness_vessel + P_des / 2
 Stress_I = S_m[idx_vessel] * 1e6
 if P_m <= Stress_I:
-    print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
+    print(f"Good, {P_m / 1e6:.3f} is less than {Stress_I / 1e6:.3f}")
 else:
-    print(f"Not good, {P_m:.5} is more than {Stress_I:.5}")
+    print(f"Not good, {P_m / 1e6:.3f} is more than {Stress_I / 1e6:.3f}")
 
 # Point 3 - Design conditions
 # Constant factors
@@ -228,8 +228,10 @@ Limit_Stress = 3 * S_m[idx_S_m] * 1e6
 
 # Verify that thermal stresses are below 3S_m
 if Sigma_thermal_max <= Limit_Stress:
-    print(f"Verified: Q = {Sigma_thermal_max:.5} MPa <= 3 S_m = {Limit_Stress:.5} MPa")
+    print(
+        f"Verified: Q = {Sigma_thermal_max / 1e6:.2f} MPa <= 3 S_m = {Limit_Stress / 1e6:.2f} MPa"
+    )
 else:
     print(
-        f"Not verified: Q = {Sigma_thermal_max:.5} MPa > 3 S_m = {Limit_Stress:.5} MPa"
+        f"Not verified: Q = {Sigma_thermal_max / 1e6:.2f} MPa > 3 S_m = {Limit_Stress / 1e6:.2f} MPa"
     )

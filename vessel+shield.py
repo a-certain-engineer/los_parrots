@@ -136,7 +136,7 @@ Thickness_tresca = (P_des * R_ves) / (S_m[idx] * 1e6 - 0.5 * P_des)
 
 # Point 2 and 3 - Actual design conditions and vessel thickness
 # Tresca thickness
-print("\nTresca thickness")
+print("Tresca thickness")
 
 # Parameters for the iterative cycle
 T_prev_tresca = T_avg
@@ -169,7 +169,7 @@ while toll >= 1:
 
 # Print results
 print(
-    f"Thickness: {Thickness_tresca * 100:.5} cm | Desgin temperature: {T_des_tresca - Kelvin:.5} C | Index: {idx_tresca} | Tollerance: {toll:.5}"
+    f"Thickness: {Thickness_tresca * 100:.2f} cm | Desgin temp.: {T_des_tresca - Kelvin:.0f} C | Tollerance: {toll:.0f}"
 )
 
 # Buckling thickness
@@ -183,9 +183,9 @@ W = Delta_D_max / D_ves
 
 # Ovality check
 if W < 0.025:
-    print(f"Ovality check respected: W ({W:.4}) is less than 2.5%")
+    print(f"Ovality check respected: W ({W * 100:.2f} %) is less than 2.5%")
 else:
-    print(f"Ovality check not respected: W ({W:.4}) is more than 2.5%")
+    print(f"Ovality check not respected: W ({W * 100:.2f} %) is more than 2.5%")
 
 # Parameters for the iterative cycle
 max_iter = 10000
@@ -282,7 +282,7 @@ if iteration == max_iter:
 
 # Print results
 print(
-    f"Thickness: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des_buckling - Kelvin:.5f} C |"
+    f"Final thickness: {Thickness_buckling * 100:.2f} cm | Iteration count: {iteration} | Design temp.: {T_des_buckling - Kelvin:.0f} C |"
 )
 
 # Critical thickness
@@ -328,20 +328,20 @@ Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
 h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 
 # External length
-D_ext = D_ves + 2 * Thickness_vessel + 2 * Thickness_insulation
+L_ext = D_ves + 2 * Thickness_vessel + 2 * Thickness_insulation
 
 Pr_II = (Viscosity_II * Cp_II) / Thermal_conductivity_II
-Gr = (constants.g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
+Gr = (constants.g * Alpha_p * Delta_T * Density**2 * L_ext**3) / Viscosity_II**2
 
 # Mc Adams correlation
 Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 
 # Convective heat transfer coefficient for the secondary fluid
-h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
+h_2 = (Nu_II * Thermal_conductivity_II) / L_ext
 
 # Print results
-print(f"\nConvective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
-print(f"Convective heat transfer coefficient 2= {h_2:.5} W / m^2 K")
+print(f"\nConvective heat transfer coefficient 1= {h_1:.0f} W / m^2 K")
+print(f"Convective heat transfer coefficient 2= {h_2:.1f} W / m^2 K")
 
 # Global heat transfer coefficient between the vessel and the thermal insulation
 U_1 = 1 / (
@@ -364,6 +364,7 @@ U_2 = 1 / (
     + 1 / h_2
 )
 
+print(f"Outer global heat exchange coefficient: {U_2:.2f} W / m^2 K")
 # Point 5 - Volumetric heat source
 x = np.linspace(0, Thickness_vessel, 100)
 
@@ -372,10 +373,10 @@ Vol_q3_prime = q03_prime * np.exp(-Mu_steel * x)
 
 # Print results and plot volumetric heat source profile
 print(
-    f"Volumetric heat flux at the vessel inner surface: {Vol_q3_prime[0] / 1e6:.5f} MW / m^3"
+    f"Volumetric heat flux at the vessel inner surface: {Vol_q3_prime[0] / 1e6:.3f} MW / m^3"
 )
 print(
-    f"Volumetric heat flux at the vessel outer surface: {Vol_q3_prime[-1] / 1e6:.5f} MW / m^3"
+    f"Volumetric heat flux at the vessel outer surface: {Vol_q3_prime[-1] / 1e6:.3f} MW / m^3"
 )
 
 plt.figure(figsize=(10, 6))
@@ -410,10 +411,10 @@ idx_max_temperature = np.argmax(T_profile)
 pos_max_temperature = x[idx_max_temperature]
 
 # Print results
-print(f"Inner vessel temperature: {T_inner - Kelvin:.5f} C")
-print(f"Outer vessel temperature: {T_outer - Kelvin:.5f} C")
-print(f"Maximum temperature: {T_max - Kelvin:.5f} C")
-print(f"Position of maximum temperature: {pos_max_temperature * 100:.5f} cm")
+print(f"Inner vessel temperature: {T_inner - Kelvin:.0f} C")
+print(f"Outer vessel temperature: {T_outer - Kelvin:.0f} C")
+print(f"Maximum temperature: {T_max - Kelvin:.0f} C")
+print(f"Position of maximum temperature: {pos_max_temperature * 100:.2f} cm")
 
 # Point 7 - Thermal power flux
 # Global heat transfer coefficient between the vessel wall and the insulator in cylindrical geometry ?
@@ -478,8 +479,8 @@ q_flux_in = U_1c * (T_1 - T_2)
 q_flux_out = q_flux_in * R_ves / (R_ves + Thickness_vessel)
 
 # Print results
-print(f"Inner thermal power: {q_flux_in / 1000:.5f} KW / m^2")
-print(f"Outer thermal power: {q_flux_out / 1000:.5f} KW / m^2")
+print(f"Inner thermal power: {q_flux_in / 1e3:.2f} KW / m^2")
+print(f"Outer thermal power: {q_flux_out / 1e3:.2f} KW / m^2")
 
 # Point 8 - Resistance verification
 # Matiotte stress
@@ -490,9 +491,9 @@ Stress_I = S_m[idx] * 1e6
 
 # Verify just the mechanical stresses
 if P_m <= Stress_I:
-    print(f"Verified, P_m = {P_m:.5} MPa <= S_m = {Stress_I:.5} MPa")
+    print(f"Verified, P_m = {P_m / 1e6:.2f} MPa <= S_m = {Stress_I / 1e6:.2f} MPa")
 else:
-    print(f"Not verified, P_m = {P_m:.5} MPa > S_m = {Stress_I:.5} MPa")
+    print(f"Not verified, P_m = {P_m / 1e6:.2f} MPa > S_m = {Stress_I / 1e6:.2f} MPa")
 
 # Lamè radial stress
 Sigma_r_M = (
@@ -575,9 +576,9 @@ Test_S_y = 2 * S_y[idx] * 1e6
 
 if Sigma_comp_max <= Test_S_y:
     print(
-        f"Verified, Sigma_comp ({Sigma_comp_max:.5}) is less than 2 S_y ({Test_S_y:.5})"
+        f"Verified, Sigma_comp ({Sigma_comp_max / 1e6:.2f} MPa) is less than 2 S_y ({Test_S_y / 1e6:.2f} MPa)"
     )
 else:
     print(
-        f"Not verified, Sigma_comp ({Sigma_comp_max:.5}) is more than 2 S_y ({Test_S_y:.5})"
+        f"Not verified, Sigma_comp ({Sigma_comp_max / 1e6:.2f} MPa) is more than 2 S_y ({Test_S_y / 1e6:.2f} MPa)"
     )
