@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 import scipy.constants as constants
 
-plt.rc("font", size=13)  # Increase size of axis numbers and titles
+# Increase size of axis numbers and titles
+plt.rc("font", size=13)
 
 # Variables
 P_des = 82.5  # bar
@@ -30,7 +31,7 @@ Mu_steel = 24  # 1 / m
 Thermal_conductivity_steel = 48.1  #  W / m K
 T_1 = 214.0  # °C
 T_2 = 70.0  # °C
-Kelvin = 273.15  # K
+Kelvin = constants.zero_Celsius  # K
 E = 177.0e9  # Pa
 Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
@@ -88,14 +89,14 @@ D_e = D_ves - D_bar  # m
 R_bar = D_bar / 2
 R_ves = D_ves / 2
 
-# Change measurement units
+# Unit conversion
 T_1 = T_1 + Kelvin
 T_2 = T_2 + Kelvin
 Phi_0 = Phi_0 * 1e4
 Energy_gamma = Energy_gamma * constants.eV
 
 
-# Point 2
+# Point 2 - Guess design conditons
 # Design pressure
 P_des = P_des * 1e5  # Pa
 P_des_ext = P_des_ext * 1e5  # Pa
@@ -104,14 +105,19 @@ P_des_ext = P_des_ext * 1e5  # Pa
 T_des = 270  # °C
 
 
-# Point 3
+# Point 3 - Guess vessel thickness
+# Find index of guess design temperature
+idx_guess = functions.find_index(T_des)
+
 # Guess thickness
-Thickness_tresca = (P_des * R_ves) / (S_m[4] * 1e6 - 0.5 * P_des)
+Thickness_tresca = (P_des * R_ves) / (S_m[idx_guess] * 1e6 - 0.5 * P_des)
 
 
-# Point 4
-# Convective heat transfer coefficient for primary fluid
+# Point 4 - Heat exchange coefficients
+# Area of circular crown
 Area = math.pi * (D_ves**2 - D_bar**2) / 4
+
+# Fluid velocity
 Velocity = Flow_rate / (Density * Area)
 
 Re = (Density * Velocity * D_e) / Viscosity_I
@@ -120,9 +126,10 @@ Pr_I = (Viscosity_I * Cp_I) / Thermal_conductivity_I
 # Dittus-Boelter correlation
 Nu_I = 0.023 * Re**0.8 * Pr_I**0.4
 
+# Convective heat transfer coefficient for the primary fluid
 h_1 = (Nu_I * Thermal_conductivity_I) / D_e
 
-# Convective heat transfer coefficient for secondary fluid
+# External length
 D_ext = D_ves + 2 * Thickness_tresca + 2 * Thickness_insulation
 
 Pr_II = (Viscosity_II * Cp_II) / Thermal_conductivity_II
@@ -131,9 +138,10 @@ Gr = (constants.g * Alpha_p * Delta_T * Density**2 * D_ext**3) / Viscosity_II**2
 # Mc Adams correlation
 Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 
+# Convective heat transfer coefficient for the secondary fluid
 h_2 = (Nu_II * Thermal_conductivity_II) / D_ext
 
-# Global heat transfer coefficient vessel-thermal insulation
+# Global heat transfer coefficient between the vessel and the thermal insulation
 U_1 = 1 / (
     (R_ves + Thickness_tresca)
     / Thermal_conductivity_ins
@@ -144,7 +152,7 @@ U_1 = 1 / (
     / ((R_ves + Thickness_tresca + Thickness_insulation) * h_1)
 )
 
-# Global heat transfer coefficient insulator-cpp
+# Global heat transfer coefficient between the insulator and the cointainment
 U_2 = 1 / (
     (R_ves + Thickness_tresca + Thickness_insulation)
     / Thermal_conductivity_ins
@@ -155,24 +163,27 @@ U_2 = 1 / (
 )
 
 
-# Point 6
+# Point 6 - Heat flux calculation
 q03 = Phi_0 * Energy_gamma * Mu_steel * Build_up
 
-# Point 2 and 3
-# Iterative cycle to find the design teperature and thickness
+# Point 2 and 3 - Actual design temperature and vessel thickness
+# Tresca thickness
+print("\nTresca thickness")
+
+# Parameters for the iterative cycle
 T_avg = (T_1 + T_2) / 2
 T_prev_tresca = T_avg
 toll = 10
-idx_tresca = 4
+idx_tresca = idx_guess
 
-print("\nTresca thickness")
 while toll >= 1:
+    # Update thickness
     Thickness_tresca = (P_des * R_ves) / (S_m[idx_tresca] * 1e6 - 0.5 * P_des)
 
-    # Solutions
+    # Calculate constants for the thermal profile
     A_tresca, B_tresca = functions.solve_coefficients(Thickness_tresca, h_1, h_2, q03)
 
-    # Calculate and print average temperature
+    # Calculate average temperature
     T_int_tresca, err = integrate.quad(
         functions.Temperature_profile,
         0.0,
@@ -185,19 +196,18 @@ while toll >= 1:
     toll = np.absolute(T_prev_tresca - T_des_tresca)
     T_prev_tresca = T_des_tresca
 
-    # Get index for the closest temperature
+    # Find index for the closest temperature
     idx_tresca = functions.find_index(T_des_tresca)
 
-    # Print results
-    print(
-        f"Thickness: {Thickness_tresca * 100:.5} cm | Design temperature: {T_des_tresca - Kelvin:.5} C | Index: {idx_tresca} | Tollerance: {toll:.5}"
-    )
+# Print results
+print(
+    f"Thickness: {Thickness_tresca * 100:.5} cm | Design temperature: {T_des_tresca - Kelvin:.5} C | Tollerance: {toll:.5}"
+)
 
-
-# Buckling
+# Buckling thickness
 print("\nBuckling")
 
-# Ovality
+# Ovality calculation
 D_1 = (D_ves + 1.25) / 200
 D_2 = D_ves / 100
 Delta_D_max = min(D_1, D_2)
@@ -209,8 +219,8 @@ if W < 0.025:
 else:
     print(f"Ovality check not respected: W ({W:.4}) is more than 2.5%")
 
-# Parameters for the loop
-max_iter = 1000
+# Parameters for the iterative cycle
+max_iter = 10000
 increment = 1e-4
 P_all = 0
 iteration = 0
@@ -220,9 +230,10 @@ T_prev_buckling = T_avg
 Thickness_buckling = Thickness_tresca
 
 while P_all < P_des_ext and iteration <= max_iter:
+    # Update thickness
     Thickness_buckling += increment
 
-    # Solutions
+    # Calculate constants for the thermal profile
     A_buckling, B_buckling = functions.solve_coefficients(
         Thickness_buckling, h_1, h_2, q03
     )
@@ -240,15 +251,17 @@ while P_all < P_des_ext and iteration <= max_iter:
     toll = np.absolute(T_prev_buckling - T_des_buckling)
     T_prev_buckling = T_des_buckling
 
-    # Get index for the closest temperature
+    # Find index for the closest temperature
     idx_buckling = functions.find_index(T_des_buckling)
 
     # Geometric parameters
     slender = D_ves / Thickness_buckling
     D_ext_buckling = D_ves + 2 * Thickness_buckling
 
+    # Z parameter calculation
     Z = math.sqrt(3) / 4 * (2 * D_ext_buckling / Thickness_buckling + 1) * W
 
+    # Limiting pressure for elastic collapse
     q_E = (
         (2 * E)
         / (1 - Nu**2)
@@ -259,7 +272,9 @@ while P_all < P_des_ext and iteration <= max_iter:
             * (D_ext_buckling / Thickness_buckling - 1) ** 2
         )
     )
-    q_0 = (
+
+    # Limiting pressure for plastic collapse
+    q_P = (
         2
         * S_y[idx_buckling]
         * 1e6
@@ -268,44 +283,54 @@ while P_all < P_des_ext and iteration <= max_iter:
         * (1 + 0.5 * Thickness_buckling / D_ext_buckling)
     )
 
-    q_U = q_0 / math.sqrt(1 + Z**2)
+    # Upper limiting pressure
+    q_U = q_P / math.sqrt(1 + Z**2)
 
-    sqrt_term = (q_0 + q_E * (1 + Z)) ** 2 - 4 * q_0 * q_E
+    # Lower limiting pressure
+    sqrt_term = (q_P + q_E * (1 + Z)) ** 2 - 4 * q_P * q_E
     if sqrt_term < 0:
         sqrt_term = 0
-    q_L = 0.5 * (q_0 + q_E * (1 + Z) - math.sqrt(sqrt_term))
+    q_L = 0.5 * (q_P + q_E * (1 + Z) - math.sqrt(sqrt_term))
 
-    q_ratio = q_0 / q_E
+    # Alternative slenderness
+    q_ratio = q_P / q_E
 
+    # μ weigth
     if q_ratio < 0.04:
         mu = 1.0
     elif q_ratio > 0.7:
         mu = 0.0
     else:
-        mu = 0.35 * np.log(q_E / q_0) - 0.125
+        mu = 0.35 * np.log(q_E / q_P) - 0.125
 
+    # Reference Corradi pressure
     q_C = mu * q_U + (1 - mu) * q_L
 
+    # Calculate allowable pressure
     P_all = q_C / S_corradi
 
+    # Update iteration count
     iteration += 1
 
-    if iteration == 1000:
-        print("System does not converge after 1000 iterations.")
+# Warn about failure to converge
+if iteration == max_iter:
+    print(f"System does not converge after {max_iter} iterations.")
 
+# Print results
 print(
-    f"Thickness: {Thickness_buckling * 100:.5f} cm | Iteration count: {iteration} | Design temperature: {T_des_buckling - Kelvin:.5f} C |"
+    f"Final thickness: {Thickness_buckling * 100:.5f} cm | Number of iterations: {iteration} | Design temp.: {T_des_buckling - Kelvin:.5f} C |"
 )
 
 # Critical thickness
 t_critical = D_ves / (math.sqrt(E / (S_y[idx_buckling] * 1e6 * (1 - Nu**2))))
 
+# Select failure regime depending on the final critical thickness
 if Thickness_buckling < t_critical:
     print("Elastic buckling regime")
 else:
     print("Plastic collapse regime")
 
-# Update variables considering the limiting criterion
+# Update variables considering the limiting failure
 if Thickness_buckling >= Thickness_tresca:
     Thickness_vessel = Thickness_buckling
     A, B = A_buckling, B_buckling
@@ -319,32 +344,37 @@ else:
     idx = idx_tresca
     print("Governing criterion: Tresca")
 
-# Point 4
-# Convective heat transfer coefficient for primary fluid
+
+# Point 4 - Heat exchange coefficients
+# The convective heat transfer coefficient for the primary fluid is not calculated again since it doesn't change
 print(f"\nConvective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
 
-# Convective heat transfer coefficient for secondary fluid
+# Convective heat transfer coefficient for the secondary fluid
 print(f"Convective heat transfer coefficient 2= {h_2:.5} W / m^2 K")
 
+# Geometric parameters
 R_1 = R_ves + Thickness_vessel
 R_2 = R_1 + Thickness_insulation
 
-# Global heat transfer coefficient vessel-thermal insulation
+# Global heat transfer coefficient between the vessel and the thermal insulation
 U_1 = 1 / (R_1 / Thermal_conductivity_ins * math.log(R_2 / R_1) + R_1 / (R_2 * h_1))
 
-# Global heat transfer coefficient insulator-cpp
+# Global heat transfer coefficient between the insulator and the cointainment
 U_2 = 1 / (R_2 / Thermal_conductivity_ins * math.log(R_2 / R_1) + 1 / h_2)
 
 print(f"U1 vessel-thermal insulation= {U_1:.5} W / K")
 print(f"U2 insulator-cpp= {U_2:.5} W / K")
 
-# Point 5
+# Point 5 - Volumetric heat source
 x = np.linspace(0, Thickness_vessel, 100)
 
+# Intensity of the incoming gamma flux
 Intensity = Phi_0 * Energy_gamma * Build_up
 
+# Volumetric heat source profile following an exponential decay law
 Vol_q3 = Mu_steel * Intensity * np.exp(-Mu_steel * x)
 
+# Print results and plot volumetric heat source profile
 print(
     f"Volumetric heat flux at the vessel inner surface: {Vol_q3[0] / 1e6:.5} MW / m^3"
 )
@@ -361,8 +391,9 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-# Point 6
-# Plot temperature profile
+
+# Point 6 - Radial temperature profile
+# Calculate and plot the temperature profile
 T_profile = functions.Temperature_profile(x, A, B, q03)
 
 plt.figure(figsize=(10, 6))
@@ -375,27 +406,24 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
+# Extract values from the temperature profile
 T_inner = T_profile[0]
 T_outer = T_profile[-1]
-idx_max_temperature = np.argmax(T_profile)
-pos_max_temperature = x[idx_max_temperature]
 T_max = np.max(T_profile)
 
+# Find position of maximum temperature
+idx_max_temperature = np.argmax(T_profile)
+pos_max_temperature = x[idx_max_temperature]
+
+# Print results
 print(f"Inner vessel temperature: {T_inner - Kelvin:.5} C")
 print(f"Outer vessel temperature: {T_outer - Kelvin:.5} C")
 print(f"Maximum temperature: {T_max - Kelvin:.5} C")
 print(f"Position of maximum temperature: {pos_max_temperature * 100:.5} cm")
 
-# Point 7 (slab)
-# Calculate heating
-# q_second = (T_1 - T_2) / (
-#     1 / h_1
-#     + Thickness / (Thermal_conductivity_steel * Area)
-#     + Thick_insulation / Thermal_conductivity_ins
-#     + 1 / h_2
-# )
 
-# Point 7
+# Point 7 - Thermal power flux
+# Global heat transfer coefficient between ??? in cylindrical geometry
 U_1c = 1 / (
     1 / h_1
     + R_ves / Thermal_conductivity_steel * np.log((R_ves + Thickness_vessel) / R_ves)
@@ -407,7 +435,7 @@ U_1c = 1 / (
     + R_ves / (R_ves + Thickness_vessel + Thickness_insulation) * 1 / h_2
 )
 
-# global heat transfer coefficient insulator-cpp
+# Global heat transfer coefficient between ??? in cylindrical geometry
 U_2c = 1 / (
     (R_ves + Thickness_vessel) / R_ves * 1 / h_1
     + (R_ves + Thickness_vessel)
@@ -424,10 +452,7 @@ U_2c = 1 / (
     / h_2
 )
 
-print(f"U1 vessel-thermal insulation= {U_1c:.5} W / K")
-print(f"U2 insulator-cpp= {U_2c:.5} W / K")
-
-
+# Check that the product UA stays constant
 check = (U_1c * R_ves) / (U_2c * (R_ves + Thickness_vessel))
 
 if round(check, 4) == 1:
@@ -435,27 +460,14 @@ if round(check, 4) == 1:
 else:
     print(f"not ok, ratio is: {round(check, 4)}")
 
-
+# Calculate the constants for the temperature profile
 A_c = -R_ves / Thermal_conductivity_steel * U_1c * (T_1 - T_2)
 B_c = -(U_1c / h_1 * (T_1 - T_2) - T_1 + A_c * np.log(R_ves))
+
 r = np.linspace(R_ves, R_ves + Thickness_vessel, 100)
 
+# Calculate and plot the tempertaure profile comparing it with temperature profile considering gamma heating
 T_c = A_c * np.log(r) + B_c
-
-plt.figure(figsize=(10, 6))
-plt.plot(r, T_c, "b-", linewidth=2, label="Temperature profile")
-plt.xlabel("Radial position [m]")
-plt.ylabel("Temperature [K]")
-plt.title("Temperature profile inside RPV wall (cylinder)")
-plt.minorticks_on()
-plt.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
-
-q_flux_in = U_1c * (T_1 - T_2)
-q_flux_out = U_2c * (T_1 - T_2)
-print(f"Inner thermal power: {q_flux_in / 1000:.5} KW / m^2")
-print(f"Outer thermal power: {q_flux_out / 1000:.5} KW / m^2")
 
 plt.figure(figsize=(10, 6))
 plt.plot(r, T_profile, "b-", linewidth=2, label="With gamma radiation")
@@ -468,22 +480,37 @@ plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 
-# Point 8
-# Mechanical stresses
+# Calculate thermal power flux at the inner and outer vessel surface
+q_flux_in = U_1c * (T_1 - T_2)
+q_flux_out = U_2c * (T_1 - T_2)
+
+# Print results
+print(f"Inner thermal power: {q_flux_in / 1000:.5} KW / m^2")
+print(f"Outer thermal power: {q_flux_out / 1000:.5} KW / m^2")
+
+
+# Point 8 - Resistance verification
+# Mariotte stress
 P_m = P_des * R_ves / Thickness_vessel + P_des / 2
+
+# Stress intensity at current design temperature
 Stress_I = S_m[idx] * 1e6
 
+# Verify just the mechanical stresses
 if P_m <= Stress_I:
-    print(f"Good, {P_m:.5} is less than {Stress_I:.5}")
+    print(f"Verified, P_m = {P_m:.5} MPa <= S_m = {Stress_I:.5} MPa")
 else:
-    print(f"Not good, {P_m:.5} is more than {Stress_I:.5}")
+    print(f"Not verified, P_m = {P_m:.5} MPa > S_m = {Stress_I:.5} MPa")
 
+# Lamè radial stress
 Sigma_r = (
     -(R_ves**2)
     / ((R_ves + Thickness_vessel) ** 2 - R_ves**2)
     * ((R_ves + Thickness_vessel) ** 2 / r**2 - 1)
     * P_des
 )
+
+# Lamè hoop stress
 Sigma_theta = (
     +(R_ves**2)
     / ((R_ves + Thickness_vessel) ** 2 - R_ves**2)
@@ -491,19 +518,19 @@ Sigma_theta = (
     * P_des
 )
 
-Sigma_Lame = np.max(Sigma_theta - Sigma_r)
-# idx_max = np.argmax(Sigma_theta - Sigma_r)
-# pos = r[idx_max]
+# Tresca comparison stress
+Sigma_Tresca = np.max(Sigma_theta - Sigma_r)
 
-# Thermal stresses
+# Maximum thermal stresses
 Q = (Sigma_T * Alpha_T * E * q03) / (
     Thermal_conductivity_steel * (1 - Nu) * Mu_steel**2
 )
 
-# Mechanical and thermal stresses
-test = Q + Sigma_Lame
+# Verify mechanical and thermal stresses
+test = Q + Sigma_Tresca
 test_y = 3 * S_m[idx] * 1e6
+
 if test < test_y:
-    print(f"Good, {test:.5} is less than {test_y:.5}")
+    print(f"Verified, Q + P_m = {test:.5} MPa <= 3 S_m = {test_y:.5} MPa")
 else:
-    print(f"Not good, {test:.5} is more than {test_y:.5}")
+    print(f"Not verified, Q + P_m = {test:.5} MPa > 3 S_m = {test_y:.5} MPa")

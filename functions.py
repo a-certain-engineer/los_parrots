@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.constants as constants
 
 # variables
 P_des = 85  # bar
@@ -26,12 +27,11 @@ Mu_steel = 24  # 1 / m
 Thermal_conductivity_steel = 48.1  #  W / m K
 T_1 = 214.0  # °C
 T_2 = 70.0  # °C
-Kelvin = 273.15  # K
+Kelvin = constants.zero_Celsius  # K
 E = 177.0e9  # Pa
 Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
-Sigma_T_1 = 0.56  # From graph
-Sigma_T_2 = 0.08  # From graph
+Sigma_T = 0.56  # From graph
 a = 2.75 / 2  # m
 
 # ASME III data for considered steel
@@ -69,42 +69,44 @@ T_1 = T_1 + Kelvin
 T_2 = T_2 + Kelvin
 
 
-def Temperature_profile_prime(x, A, B, q03_prime):
+def Temperature_profile(x, A, B, q_volumetric):
+    """Calculates the temperature T(x) at a specific depth 'x' inside the vessel wall with the minimized heat flux q03_prime.
+    T(x) = - (q0 / (k * mu^2)) * exp(-mu * x) + A * x + B
+    """
     return (
-        -q03_prime / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
-        + A * x
-        + B
-    )
-
-
-def Temperature_profile(x, A, B, q03):
-    return (
-        -q03 / (Mu_steel**2 * Thermal_conductivity_steel) * np.exp(-Mu_steel * x)
+        -q_volumetric
+        / (Mu_steel**2 * Thermal_conductivity_steel)
+        * np.exp(-Mu_steel * x)
         + A * x
         + B
     )
 
 
 def integrand_function(rho, A, B, q03_prime):
+    """Calculates T(r) * r"""
     x_local = rho - a
-    return Temperature_profile_prime(x_local, A, B, q03_prime) * rho
+    return Temperature_profile(x_local, A, B, q03_prime) * rho
 
 
-def solve_coefficients(t, h_1, h_2, q03):
-    # Linear system for A and B
-    # Equation for A
+def solve_coefficients(t, h_1, h_2, q_volumetric):
+    """Solves the linear system of equations to find integration constants A and B given by the following BC:
+    1. Inner BC (Convection): -k * dT/dx = h1 * (T_fluid - T_wall) at x=0
+    2. Outer BC (Convection + Insulation): Heat flux through wall = Heat flux through insulation."""
+    # Terms for A
     term1 = (
-        -(q03 * Thickness_insulation)
+        -(q_volumetric * Thickness_insulation)
         / (Mu_steel * Thermal_conductivity_ins)
         * np.exp(-Mu_steel * t)
     )
     term2 = -(Thickness_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
         -Mu_steel * t
     )
-    term3 = (q03 / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(-Mu_steel * t)
+    term3 = (q_volumetric / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
+        -Mu_steel * t
+    )
     term4 = -T_1
-    term5 = -q03 / (Mu_steel**2 * Thermal_conductivity_steel)
-    term6 = -q03 / (Mu_steel * h_1)
+    term5 = -q_volumetric / (Mu_steel**2 * Thermal_conductivity_steel)
+    term6 = -q_volumetric / (Mu_steel * h_1)
 
     numerator = term1 + term2 + term3 + term4 + term5 + term6
     denominator = (
@@ -117,62 +119,16 @@ def solve_coefficients(t, h_1, h_2, q03):
     beta1 = 0
     gamma1 = numerator
 
-    # Equation for B
-    alpha2 = -(Thermal_conductivity_steel / h_1)
-    beta2 = 1
-    gamma2 = (
-        T_1 + q03 / (Mu_steel**2 * Thermal_conductivity_steel) + q03 / (Mu_steel * h_1)
-    )
-
-    # Matrices for the system
-    A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
-
-    # Coefficients vector
-    b_vec = np.array([gamma1, gamma2])
-
-    # Solve matrix equation
-    A, B = np.linalg.solve(A_mat, b_vec)
-
-    return (A, B)
-
-
-def solve_coefficients_prime(t, h_1, h_2, q03_prime):
-    term1 = (
-        -(q03_prime * Thickness_insulation)
-        / (Mu_steel * Thermal_conductivity_ins)
-        * np.exp(-Mu_steel * t)
-    )
-    term2 = -(Thickness_insulation / (h_2 * Thermal_conductivity_ins)) * np.exp(
-        -Mu_steel * t
-    )
-    term3 = (q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)) * np.exp(
-        -Mu_steel * t
-    )
-    term4 = -T_1
-    term5 = -q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-    term6 = -q03_prime / (Mu_steel * h_1)
-
-    numerator = term1 + term2 + term3 + term4 + term5 + term6
-    denominator = (
-        t
-        + Thermal_conductivity_steel / h_1
-        + Thermal_conductivity_steel / h_2
-        + (Thermal_conductivity_steel * Thickness_insulation) / Thermal_conductivity_ins
-    )
-    alpha1 = denominator
-    beta1 = 0
-    gamma1 = numerator
-
-    # Equation for B
+    # Terms for B
     alpha2 = -(Thermal_conductivity_steel / h_1)
     beta2 = 1
     gamma2 = (
         T_1
-        + q03_prime / (Mu_steel**2 * Thermal_conductivity_steel)
-        + q03_prime / (Mu_steel * h_1)
+        + q_volumetric / (Mu_steel**2 * Thermal_conductivity_steel)
+        + q_volumetric / (Mu_steel * h_1)
     )
 
-    # Matrices for the system
+    # Matrix for the system
     A_mat = np.array([[alpha1, beta1], [alpha2, beta2]])
 
     # Coefficients vector
@@ -185,11 +141,14 @@ def solve_coefficients_prime(t, h_1, h_2, q03_prime):
 
 
 def find_index(T_des):
+    """Finds the index corresponding to the given temperature of Table 2"""
     T_des_celsius = T_des - Kelvin
 
+    # Get index of last temperature if it's higher than the highest temperature in the table
     if T_des_celsius > Temperature[-1]:
         return len(Temperature) - 1
 
+    # Get index of temperature in the table
     idx = np.where(
         Temperature >= T_des_celsius, Temperature - T_des_celsius, np.inf
     ).argmin()
