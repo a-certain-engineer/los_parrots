@@ -423,7 +423,7 @@ print(f"Position of maximum temperature: {pos_max_temperature * 100:.2f} cm")
 
 
 # Point 7 - Thermal power flux
-# Global heat transfer coefficient between ??? in cylindrical geometry
+# Global heat transfer coefficient between inner and outer fluids, based on the inner radius, in cylindrical geometry
 U_1c = 1 / (
     1 / h_1
     + R_ves / Thermal_conductivity_steel * np.log((R_ves + Thickness_vessel) / R_ves)
@@ -435,7 +435,7 @@ U_1c = 1 / (
     + R_ves / (R_ves + Thickness_vessel + Thickness_insulation) * 1 / h_2
 )
 
-# Global heat transfer coefficient between ??? in cylindrical geometry
+# Global heat transfer coefficient between inner and outer fluids, based on vessel-insulation interface, in cylindrical geometry
 U_2c = 1 / (
     (R_ves + Thickness_vessel) / R_ves * 1 / h_1
     + (R_ves + Thickness_vessel)
