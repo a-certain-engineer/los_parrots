@@ -8,23 +8,8 @@ plt.rc("font", size=13)  # Increase size of axis numbers and titles
 
 # variables
 P_des = 82.5  # bar
-T_des = 214  # °C
 T_fluid = 214  # °C
-D_bar = 2.5  # m
 D_ves = 3.0  # m
-Thickness_insulation = 0.05  # m
-Density = 852.50  # Kg/m3
-Flow_rate = 3227  # Kg / s
-Viscosity_I = 1.259e-4  # Pa s
-Viscosity_II = 4.06e-4  # Pa s
-Cp_I = 4534  # J / Kg K
-Cp_II = 4172.5  # J / Kg s
-Thermal_conductivity_I = 0.658  # W / m K
-Thermal_conductivity_II = 0.666  # W / m K
-Delta_T = 30  # °C
-Alpha_p = 5.57e-4  # K^-1
-Thermal_conductivity_ins = 1.4  # W / m K
-Intensity_0 = 1.44e5  # W / m2
 Phi_0 = 1.5e13  # 1 / cm2 s
 Energy_gamma = 6.0e6  # eV
 Build_up = 1.4
@@ -85,15 +70,9 @@ S_y = np.array(
 )
 
 # Geometry calculations
-D_e = D_ves - D_bar  # m
-R_bar = D_bar / 2
 R_ves = D_ves / 2
 
 # Unit conversion
-P_des = P_des * 1e5  # Pa
-T_1 = T_1 + Kelvin
-T_2 = T_2 + Kelvin
-T_fluid = T_fluid + Kelvin
 Energy_gamma = Energy_gamma * constants.eV
 Phi_0 = Phi_0 * 1e4
 q03 = Energy_gamma * Phi_0 * Mu_steel * Build_up
@@ -115,6 +94,7 @@ q03_prime = (
 Shield_thickness = -1 / Mu_steel * np.log(q03_prime / q03)
 
 print(f"Thermal shield thickness: {Shield_thickness * 100:.2f} cm")
+
 
 # Point 5 - Radial temperature profile
 # Constants from boundary condition
@@ -167,6 +147,7 @@ print(f"Outer surface shield temperature: {T_shield[-1] - Kelvin:.0f} C")
 print(f"Maximum shield temperature: {T_shield_max - Kelvin:.0f} C")
 print(f"Position of maximum temperature in the shield: {pos * 1e2:.2f} cm")
 
+
 # Point 6 - Thermal stresses evaluation
 # Mechanical stresses
 P_m = P_des * R_ves / Thickness_vessel + P_des / 2
@@ -175,6 +156,7 @@ if P_m <= Stress_I:
     print(f"Good, {P_m / 1e6:.3f} is less than {Stress_I / 1e6:.3f}")
 else:
     print(f"Not good, {P_m / 1e6:.3f} is more than {Stress_I / 1e6:.3f}")
+
 
 # Point 3 - Design conditions
 # Constant factors

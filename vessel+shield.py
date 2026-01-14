@@ -8,7 +8,7 @@ import scipy.constants as constants
 # Increase size of axis numbers and titles
 plt.rc("font", size=13)
 
-# variables
+# Variables
 P_des = 82.5  # bar
 P_des_ext = 75  # bar
 T_des = 214  # °C
@@ -16,7 +16,7 @@ T_fluid = 214  # °C
 D_bar = 2.5  # m
 D_ves = 3.0  # m
 Thickness_insulation = 0.05  # m
-Density = 852.50  # Kg/m3
+Density = 852.50  # Kg/m³
 Flow_rate = 3227  # Kg / s
 Viscosity_I = 1.259e-4  # Pa s
 Viscosity_II = 4.06e-4  # Pa s
@@ -25,9 +25,8 @@ Cp_II = 4172.5  # J / Kg s
 Thermal_conductivity_I = 0.658  # W / m K
 Thermal_conductivity_II = 0.666  # W / m K
 Delta_T = 30  # °C
-Alpha_p = 5.57e-4  # K^-1
+Alpha_p = 5.57e-4  # 1 /K
 Thermal_conductivity_ins = 1.4  # W / m K
-Intensity_0 = 1.44e5  # W / m2
 Phi_0 = 1.5e13  # 1 / cm2 s
 Energy_gamma = 6.0e6  # eV
 Build_up = 1.4
@@ -35,7 +34,7 @@ Mu_steel = 24  # 1 / m
 Thermal_conductivity_steel = 48.1  #  W / m K
 T_1 = 214.0  # °C
 T_2 = 70.0  # °C
-Kelvin = constants.zero_Celsius  # K
+Kelvin = constants.zero_Celsius  # °K
 E = 177.0e9  # Pa
 Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
@@ -134,6 +133,7 @@ idx = functions.find_index(T_avg)
 
 Thickness_tresca = (P_des * R_ves) / (S_m[idx] * 1e6 - 0.5 * P_des)
 
+
 # Point 2 and 3 - Actual design conditions and vessel thickness
 # Tresca thickness
 print("Tresca thickness")
@@ -220,7 +220,7 @@ while P_all < P_des_ext and iteration <= max_iter:
     T_prev_buckling = T_des_buckling
 
     # Find index for the closest temperature
-    idx_buckling = functions.find_index(T_des)
+    idx_buckling = functions.find_index(T_des_buckling)
 
     # Geometric parameters
     Slender = D_ves / Thickness_buckling
@@ -472,7 +472,7 @@ plt.plot(r, T_profile, "b-", linewidth=2, label="With γ radiation")
 plt.plot(r, T_c, "r-", linewidth=2, label="Without γ radiation")
 plt.xlabel("Radial position [m]")
 plt.ylabel("Temperature [K]")
-# plt.title("Temperature profile inside vessel's wall")
+plt.title("Temperature profile inside vessel's wall")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.legend()
@@ -485,6 +485,7 @@ q_flux_out = q_flux_in * R_ves / (R_ves + Thickness_vessel)
 # Print results
 print(f"Inner thermal power: {q_flux_in / 1e3:.2f} KW / m^2")
 print(f"Outer thermal power: {q_flux_out / 1e3:.2f} KW / m^2")
+
 
 # Point 8 - Resistance verification
 # Matiotte stress
@@ -576,13 +577,13 @@ Sigma_comp = np.max([diff_1, diff_2, diff_3], axis=0)
 Sigma_comp_max = np.max(Sigma_comp)
 
 # Stress intensity
-Test_S_y = 2 * S_y[idx] * 1e6
+Test_S_y = 3 * S_m[idx] * 1e6
 
 if Sigma_comp_max <= Test_S_y:
     print(
-        f"Verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa <=  2 S_y = {Test_S_y / 1e6:.2f} MPa"
+        f"Verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa <=  3 S_m = {Test_S_y / 1e6:.2f} MPa"
     )
 else:
     print(
-        f"Not verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa > 2 S_y = {Test_S_y / 1e6:.2f} MPa"
+        f"Not verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa > 3 S_m = {Test_S_y / 1e6:.2f} MPa"
     )

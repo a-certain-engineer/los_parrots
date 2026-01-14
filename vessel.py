@@ -10,6 +10,7 @@ plt.rc("font", size=13)
 
 # Variables
 P_des = 82.5  # bar
+P_des_ext = 75  # bar
 D_bar = 2.5  # m
 D_ves = 3.0  # m
 Thickness_insulation = 0.05  # m
@@ -22,7 +23,7 @@ Cp_II = 4172.5  # J / Kg s
 Thermal_conductivity_I = 0.658  # W / m K
 Thermal_conductivity_II = 0.666  # W / m K
 Delta_T = 30  # °C
-Alpha_p = 5.57e-4  # K^-1
+Alpha_p = 5.57e-4  # 1 / K
 Thermal_conductivity_ins = 1.4  # W / m K
 Phi_0 = 1.5e13  # 1 / cm2 s
 Energy_gamma = 6.0e6  # eV
@@ -37,7 +38,6 @@ Nu = 0.3
 Alpha_T = 1.7e-5  # 1 / K
 Sigma_T = 0.56
 S_corradi = 2
-P_des_ext = 75  # bar
 
 # ASME III data for considered steel
 Temperature = np.array(
@@ -165,6 +165,7 @@ U_2 = 1 / (
 
 # Point 6 - Heat flux calculation
 q03 = Phi_0 * Energy_gamma * Mu_steel * Build_up
+
 
 # Point 2 and 3 - Actual design temperature and vessel thickness
 # Tresca thickness
@@ -400,8 +401,7 @@ plt.figure(figsize=(10, 6))
 plt.plot(x + R_ves, T_profile, "b-", linewidth=2, label="Temperature profile")
 plt.xlabel("Radial position [m]")
 plt.ylabel("Temperature [K]")
-plt.title("Temperature profile inside vessel")
-plt.minorticks_on()
+# plt.title("Temperature profile inside vessel")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
