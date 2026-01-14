@@ -100,9 +100,9 @@ q03 = Energy_gamma * Phi_0 * Mu_steel * Build_up
 
 # Results form vessel analysis
 idx_vessel = 12
-Thickness_vessel = 0.1614688  # m
-h_1 = 7498.1  # W / m^2 K
-Sigma_Lame = 91929683.96264738  # Pa
+Thickness_vessel = 0.161471789242587  # m
+h_1 = 7498  # W / m^2 K
+Sigma_Lame = 89224458.10435033  # Pa
 
 
 # Point 4 - Shield thickness

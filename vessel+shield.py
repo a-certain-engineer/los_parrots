@@ -169,11 +169,11 @@ while toll >= 1:
 
 # Print results
 print(
-    f"Thickness: {Thickness_tresca * 100:.2f} cm | Desgin temp.: {T_des_tresca - Kelvin:.0f} C | Tollerance: {toll:.0f}"
+    f"Thickness: {Thickness_tresca * 100:.2f} cm | Average temp.: {T_des_tresca - Kelvin:.0f} C | Tollerance: {toll:.0f} |"
 )
 
 # Buckling thickness
-print("\nBuckling")
+print("\nBuckling thickness")
 
 # Ovality calculation
 D_1 = (D_ves + 1.25) / 200
@@ -259,7 +259,7 @@ while P_all < P_des_ext and iteration <= max_iter:
     # Alternative slenderness
     q_ratio = q_P / q_E
 
-    # μ weigth
+    # weigth μ
     if q_ratio < 0.04:
         mu = 1.0
     elif q_ratio > 0.7:
@@ -282,7 +282,7 @@ if iteration == max_iter:
 
 # Print results
 print(
-    f"Final thickness: {Thickness_buckling * 100:.2f} cm | Iteration count: {iteration} | Design temp.: {T_des_buckling - Kelvin:.0f} C |"
+    f"Final thickness: {Thickness_buckling * 100:.2f} cm | Average temp.: {T_des_buckling - Kelvin:.0f} C | Number of iterations: {iteration:.0f} |"
 )
 
 # Critical thickness
@@ -309,7 +309,7 @@ else:
     print("Governing criterion: Tresca")
 
 
-# Point 4 - Heat exchange coefficients
+# Point 4 - Heat transfer coefficients
 # Area of the two cirular crowns
 Area = math.pi * (D_ves**2 - D_bar**2) / 4 - math.pi / 4 * (
     (a + Thickness_shield) ** 2 - a**2
@@ -340,8 +340,8 @@ Nu_II = 0.13 * (Gr * Pr_II) ** (1 / 3)
 h_2 = (Nu_II * Thermal_conductivity_II) / L_ext
 
 # Print results
-print(f"\nConvective heat transfer coefficient 1= {h_1:.0f} W / m^2 K")
-print(f"Convective heat transfer coefficient 2= {h_2:.1f} W / m^2 K")
+print(f"\nConvective heat transfer coefficient 1: {h_1:.0f} W / m^2 K")
+print(f"Convective heat transfer coefficient 2: {h_2:.1f} W / m^2 K")
 
 # Global heat transfer coefficient between the vessel and the thermal insulation
 U_1 = 1 / (
@@ -365,6 +365,8 @@ U_2 = 1 / (
 )
 
 print(f"Outer global heat exchange coefficient: {U_2:.2f} W / m^2 K")
+
+
 # Point 5 - Volumetric heat source
 x = np.linspace(0, Thickness_vessel, 100)
 
@@ -373,10 +375,10 @@ Vol_q3_prime = q03_prime * np.exp(-Mu_steel * x)
 
 # Print results and plot volumetric heat source profile
 print(
-    f"Volumetric heat flux at the vessel inner surface: {Vol_q3_prime[0] / 1e6:.3f} MW / m^3"
+    f"Volumetric heat flux at the vessel inner surface: {Vol_q3_prime[0] / 1e6:.2f} MW / m^3"
 )
 print(
-    f"Volumetric heat flux at the vessel outer surface: {Vol_q3_prime[-1] / 1e6:.3f} MW / m^3"
+    f"Volumetric heat flux at the vessel outer surface: {Vol_q3_prime[-1] / 1e6:.2f} MW / m^3"
 )
 
 plt.figure(figsize=(10, 6))
@@ -387,6 +389,7 @@ plt.title("Volumetric heat source radial profile across vessel's thickness")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
+
 
 # Point 6 - Radial temperature profile
 # Calculate and plot the temperature profile
@@ -415,6 +418,7 @@ print(f"Inner vessel temperature: {T_inner - Kelvin:.0f} C")
 print(f"Outer vessel temperature: {T_outer - Kelvin:.0f} C")
 print(f"Maximum temperature: {T_max - Kelvin:.0f} C")
 print(f"Position of maximum temperature: {pos_max_temperature * 100:.2f} cm")
+
 
 # Point 7 - Thermal power flux
 # Global heat transfer coefficient between the vessel wall and the insulator in cylindrical geometry ?
@@ -450,9 +454,9 @@ U_2c = 1 / (
 check = (U_1c * R_ves) / (U_2c * (R_ves + Thickness_vessel))
 
 if round(check, 4) == 1:
-    print(f"ok, ratio is: {round(check, 4)}")
+    print(f"ok, ratio is: {round(check, 4):.0f}")
 else:
-    print(f"not ok, ratio is: {round(check, 4)}")
+    print(f"not ok, ratio is: {round(check, 4):.2f}")
 
 # Calculate the constants for the temperature profile
 A_c = -R_ves / Thermal_conductivity_steel * U_1c * (T_1 - T_2)
@@ -464,11 +468,11 @@ r = np.linspace(R_ves, R_ves + Thickness_vessel, 100)
 T_c = A_c * np.log(r) + B_c
 
 plt.figure(figsize=(10, 6))
-plt.plot(r, T_profile, "b-", linewidth=2, label="With gamma radiation")
-plt.plot(r, T_c, "r-", linewidth=2, label="Without gamma radiation")
+plt.plot(r, T_profile, "b-", linewidth=2, label="With γ radiation")
+plt.plot(r, T_c, "r-", linewidth=2, label="Without γ radiation")
 plt.xlabel("Radial position [m]")
 plt.ylabel("Temperature [K]")
-plt.title("Temperature profile inside vessel's wall")
+# plt.title("Temperature profile inside vessel's wall")
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.legend()
@@ -576,9 +580,9 @@ Test_S_y = 2 * S_y[idx] * 1e6
 
 if Sigma_comp_max <= Test_S_y:
     print(
-        f"Verified, Sigma_comp ({Sigma_comp_max / 1e6:.2f} MPa) is less than 2 S_y ({Test_S_y / 1e6:.2f} MPa)"
+        f"Verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa <=  2 S_y = {Test_S_y / 1e6:.2f} MPa"
     )
 else:
     print(
-        f"Not verified, Sigma_comp ({Sigma_comp_max / 1e6:.2f} MPa) is more than 2 S_y ({Test_S_y / 1e6:.2f} MPa)"
+        f"Not verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa > 2 S_y = {Test_S_y / 1e6:.2f} MPa"
     )

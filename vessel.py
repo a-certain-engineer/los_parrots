@@ -201,7 +201,7 @@ while toll >= 1:
 
 # Print results
 print(
-    f"Thickness: {Thickness_tresca * 100:.5} cm | Design temperature: {T_des_tresca - Kelvin:.5} C | Tollerance: {toll:.5}"
+    f"Thickness: {Thickness_tresca * 100:.2f} cm | Average temp.: {T_des_tresca - Kelvin:.0f} C | Tollerance: {toll:.0f} |"
 )
 
 # Buckling thickness
@@ -215,9 +215,9 @@ W = Delta_D_max / D_ves
 
 # Ovality check
 if W < 0.025:
-    print(f"Ovality check respected: W ({W:.2f} %) is less than 2.5%")
+    print(f"Ovality check respected: W ({W * 100:.2f} %) is less than 2.5%")
 else:
-    print(f"Ovality check not respected: W ({W:.2f} %) is more than 2.5%")
+    print(f"Ovality check not respected: W ({W * 100:.2f} %) is more than 2.5%")
 
 # Parameters for the iterative cycle
 max_iter = 10000
@@ -295,7 +295,7 @@ while P_all < P_des_ext and iteration <= max_iter:
     # Alternative slenderness
     q_ratio = q_P / q_E
 
-    # μ weigth
+    # weigth μ
     if q_ratio < 0.04:
         mu = 1.0
     elif q_ratio > 0.7:
@@ -318,7 +318,7 @@ if iteration == max_iter:
 
 # Print results
 print(
-    f"Final thickness: {Thickness_buckling * 100:.5f} cm | Number of iterations: {iteration} | Design temp.: {T_des_buckling - Kelvin:.5f} C |"
+    f"Final thickness: {Thickness_buckling * 100:.2f} cm | Average temp.: {T_des_buckling - Kelvin:.0f} C | Number of iterations: {iteration:.0f}  |"
 )
 
 # Critical thickness
@@ -345,12 +345,12 @@ else:
     print("Governing criterion: Tresca")
 
 
-# Point 4 - Heat exchange coefficients
+# Point 4 - Heat transfer coefficients
 # The convective heat transfer coefficient for the primary fluid is not calculated again since it doesn't change
-print(f"\nConvective heat transfer coefficient 1= {h_1:.5} W / m^2 K")
+print(f"\nConvective heat transfer coefficient 1: {h_1:.0f} W / m^2 K")
 
 # Convective heat transfer coefficient for the secondary fluid
-print(f"Convective heat transfer coefficient 2= {h_2:.5} W / m^2 K")
+print(f"Convective heat transfer coefficient 2: {h_2:.1f} W / m^2 K")
 
 # Geometric parameters
 R_1 = R_ves + Thickness_vessel
@@ -362,8 +362,8 @@ U_1 = 1 / (R_1 / Thermal_conductivity_ins * math.log(R_2 / R_1) + R_1 / (R_2 * h
 # Global heat transfer coefficient between the insulator and the cointainment
 U_2 = 1 / (R_2 / Thermal_conductivity_ins * math.log(R_2 / R_1) + 1 / h_2)
 
-print(f"U1 vessel-thermal insulation= {U_1:.5} W / K")
-print(f"U2 insulator-cpp= {U_2:.5} W / K")
+print(f"Outer global heat exchange coefficient: {U_2:.2f} W / m^2 K")
+
 
 # Point 5 - Volumetric heat source
 x = np.linspace(0, Thickness_vessel, 100)
@@ -376,10 +376,10 @@ Vol_q3 = Mu_steel * Intensity * np.exp(-Mu_steel * x)
 
 # Print results and plot volumetric heat source profile
 print(
-    f"Volumetric heat flux at the vessel inner surface: {Vol_q3[0] / 1e6:.5} MW / m^3"
+    f"Volumetric heat flux at the vessel inner surface: {Vol_q3[0] / 1e6:.2f} MW / m^3"
 )
 print(
-    f"Volumetric heat flux at the vessel outer surface: {Vol_q3[-1] / 1e6:.5} MW / m^3"
+    f"Volumetric heat flux at the vessel outer surface: {Vol_q3[-1] / 1e6:.2f} MW / m^3"
 )
 
 plt.figure(figsize=(10, 6))
@@ -416,10 +416,10 @@ idx_max_temperature = np.argmax(T_profile)
 pos_max_temperature = x[idx_max_temperature]
 
 # Print results
-print(f"Inner vessel temperature: {T_inner - Kelvin:.5} C")
-print(f"Outer vessel temperature: {T_outer - Kelvin:.5} C")
-print(f"Maximum temperature: {T_max - Kelvin:.5} C")
-print(f"Position of maximum temperature: {pos_max_temperature * 100:.5} cm")
+print(f"Inner vessel temperature: {T_inner - Kelvin:.0f} C")
+print(f"Outer vessel temperature: {T_outer - Kelvin:.0f} C")
+print(f"Maximum temperature: {T_max - Kelvin:.0f} C")
+print(f"Position of maximum temperature: {pos_max_temperature * 100:.2f} cm")
 
 
 # Point 7 - Thermal power flux
@@ -456,9 +456,9 @@ U_2c = 1 / (
 check = (U_1c * R_ves) / (U_2c * (R_ves + Thickness_vessel))
 
 if round(check, 4) == 1:
-    print(f"ok, ratio is: {round(check, 4)}")
+    print(f"ok, ratio is: {round(check, 4):.0f}")
 else:
-    print(f"not ok, ratio is: {round(check, 4)}")
+    print(f"not ok, ratio is: {round(check, 4):.2f}")
 
 # Calculate the constants for the temperature profile
 A_c = -R_ves / Thermal_conductivity_steel * U_1c * (T_1 - T_2)
@@ -470,11 +470,11 @@ r = np.linspace(R_ves, R_ves + Thickness_vessel, 100)
 T_c = A_c * np.log(r) + B_c
 
 plt.figure(figsize=(10, 6))
-plt.plot(r, T_profile, "b-", linewidth=2, label="With gamma radiation")
-plt.plot(r, T_c, "r-", linewidth=2, label="Without gamma radiation")
+plt.plot(r, T_profile, "b-", linewidth=2, label="With γ radiation")
+plt.plot(r, T_c, "r-", linewidth=2, label="Without γ radiation")
 plt.xlabel("Radial position [m]")
 plt.ylabel("Temperature [K]")
-plt.title("Comparison: Temperature Profile With vs Without Heat Source")
+# plt.title("Comparison: Temperature Profile With vs Without Heat Source")
 plt.legend(fontsize=15)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
@@ -485,8 +485,8 @@ q_flux_in = U_1c * (T_1 - T_2)
 q_flux_out = U_2c * (T_1 - T_2)
 
 # Print results
-print(f"Inner thermal power: {q_flux_in / 1000:.5} KW / m^2")
-print(f"Outer thermal power: {q_flux_out / 1000:.5} KW / m^2")
+print(f"Inner thermal power: {q_flux_in / 1e3:.2f} KW / m^2")
+print(f"Outer thermal power: {q_flux_out / 1e3:.2f} KW / m^2")
 
 
 # Point 8 - Resistance verification
@@ -498,9 +498,9 @@ Stress_I = S_m[idx] * 1e6
 
 # Verify just the mechanical stresses
 if P_m <= Stress_I:
-    print(f"Verified, P_m = {P_m:.5} MPa <= S_m = {Stress_I:.5} MPa")
+    print(f"Verified, P_m = {P_m / 1e6:.2f} MPa <= S_m = {Stress_I / 1e6:.2f} MPa")
 else:
-    print(f"Not verified, P_m = {P_m:.5} MPa > S_m = {Stress_I:.5} MPa")
+    print(f"Not verified, P_m = {P_m / 1e6:.2f} MPa > S_m = {Stress_I / 1e6:.2f} MPa")
 
 # Lamè radial stress
 Sigma_r = (
@@ -531,6 +531,8 @@ test = Q + Sigma_Tresca
 test_y = 3 * S_m[idx] * 1e6
 
 if test < test_y:
-    print(f"Verified, Q + P_m = {test:.5} MPa <= 3 S_m = {test_y:.5} MPa")
+    print(f"Verified, Q + P_m = {test / 1e6:.2f} MPa <= 3 S_m = {test_y / 1e6:.2f} MPa")
 else:
-    print(f"Not verified, Q + P_m = {test:.5} MPa > 3 S_m = {test_y:.5} MPa")
+    print(
+        f"Not verified, Q + P_m = {test / 1e6:.2f} MPa > 3 S_m = {test_y / 1e6:.2f} MPa"
+    )
