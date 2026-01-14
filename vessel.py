@@ -416,9 +416,9 @@ idx_max_temperature = np.argmax(T_profile)
 pos_max_temperature = x[idx_max_temperature]
 
 # Print results
-print(f"Inner vessel temperature: {T_inner - Kelvin:.0f} C")
-print(f"Outer vessel temperature: {T_outer - Kelvin:.0f} C")
-print(f"Maximum temperature: {T_max - Kelvin:.0f} C")
+print(f"Inner vessel temperature: {T_inner:.0f} K")
+print(f"Outer vessel temperature: {T_outer:.0f} K")
+print(f"Maximum temperature: {T_max:.0f} K")
 print(f"Position of maximum temperature: {pos_max_temperature * 100:.2f} cm")
 
 

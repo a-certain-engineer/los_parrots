@@ -414,9 +414,9 @@ idx_max_temperature = np.argmax(T_profile)
 pos_max_temperature = x[idx_max_temperature]
 
 # Print results
-print(f"Inner vessel temperature: {T_inner - Kelvin:.0f} C")
-print(f"Outer vessel temperature: {T_outer - Kelvin:.0f} C")
-print(f"Maximum temperature: {T_max - Kelvin:.0f} C")
+print(f"Inner vessel temperature: {T_inner:.0f} K")
+print(f"Outer vessel temperature: {T_outer:.0f} K")
+print(f"Maximum temperature: {T_max:.0f} K")
 print(f"Position of maximum temperature: {pos_max_temperature * 100:.2f} cm")
 
 
@@ -577,13 +577,13 @@ Sigma_comp = np.max([diff_1, diff_2, diff_3], axis=0)
 Sigma_comp_max = np.max(Sigma_comp)
 
 # Stress intensity
-Test_S_y = 3 * S_m[idx] * 1e6
+Test_S_m = 3 * S_m[idx] * 1e6
 
-if Sigma_comp_max <= Test_S_y:
+if Sigma_comp_max <= Test_S_m:
     print(
-        f"Verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa <=  3 S_m = {Test_S_y / 1e6:.2f} MPa"
+        f"Verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa <=  3 S_m = {Test_S_m / 1e6:.2f} MPa"
     )
 else:
     print(
-        f"Not verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa > 3 S_m = {Test_S_y / 1e6:.2f} MPa"
+        f"Not verified, Q + P_m = {Sigma_comp_max / 1e6:.2f} MPa > 3 S_m = {Test_S_m / 1e6:.2f} MPa"
     )

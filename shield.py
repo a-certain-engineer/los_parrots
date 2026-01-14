@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 import scipy.constants as constants
 
-plt.rc("font", size=13)  # Increase size of axis numbers and titles
+# Increase size of axis numbers and titles
+plt.rc("font", size=13)  
 
 # variables
 P_des = 82.5  # bar
@@ -73,6 +74,7 @@ S_y = np.array(
 R_ves = D_ves / 2
 
 # Unit conversion
+T_fluid = T_fluid + Kelvin
 Energy_gamma = Energy_gamma * constants.eV
 Phi_0 = Phi_0 * 1e4
 q03 = Energy_gamma * Phi_0 * Mu_steel * Build_up
@@ -142,23 +144,36 @@ T_shield_min = np.min(T_shield)
 idx_max = np.argmax(T_shield)
 pos = x[idx_max]
 
-print(f"Inner surface shield temperature: {T_shield[0] - Kelvin:.0f} C")
-print(f"Outer surface shield temperature: {T_shield[-1] - Kelvin:.0f} C")
-print(f"Maximum shield temperature: {T_shield_max - Kelvin:.0f} C")
+print(f"Inner surface shield temperature: {T_shield[0]:.0f} C")
+print(f"Outer surface shield temperature: {T_shield[-1]:.0f} C")
+print(f"Maximum shield temperature: {T_shield_max:.0f} C")
 print(f"Position of maximum temperature in the shield: {pos * 1e2:.2f} cm")
 
 
-# Point 6 - Thermal stresses evaluation
-# Mechanical stresses
-P_m = P_des * R_ves / Thickness_vessel + P_des / 2
-Stress_I = S_m[idx_vessel] * 1e6
+# Point 6 - Resistance verification
+# Primary stresses
+# Find stress intensity index
+idx_S_m = functions.find_index(T_shield_avg)
+
+# Compressive stress is equal in all directions
+Sigma_r_M = -P_des * 1e5
+Sigma_theta_M = -P_des * 1e5
+Sigma_z_M = -P_des * 1e5
+
+# Primary stress intensity
+P_m = max(
+    abs(Sigma_theta_M - Sigma_r_M),
+    abs(Sigma_theta_M - Sigma_z_M),
+    abs(Sigma_r_M - Sigma_z_M),
+)
+Stress_I = S_m[idx_S_m] * 1e6
 if P_m <= Stress_I:
-    print(f"Good, {P_m / 1e6:.3f} is less than {Stress_I / 1e6:.3f}")
+    print(f"Verified, {P_m / 1e6:.2f} is less than {Stress_I / 1e6:.2f}")
 else:
-    print(f"Not good, {P_m / 1e6:.3f} is more than {Stress_I / 1e6:.3f}")
+    print(f"Not Verified, {P_m / 1e6:.2f} is more than {Stress_I / 1e6:.2f}")
 
 
-# Point 3 - Design conditions
+# Secondary stresses
 # Constant factors
 b = a + Shield_thickness
 geom_denom = b**2 - a**2
@@ -176,9 +191,7 @@ Sigma_r = np.zeros(len(r))
 Sigma_theta = np.zeros(len(r))
 Sigma_thermal = np.zeros(len(r))
 
-# Find stress intensity index
-idx_S_m = functions.find_index(T_shield_avg)
-
+# Thermal stresses calculation
 for i in range(len(r)):
     radius = r[i]
 
